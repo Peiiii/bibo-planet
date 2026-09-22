@@ -1,0 +1,39 @@
+{
+  "name": "bibo-planet",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently -k -n world,web -c cyan,magenta \"tsx watch src/server/main.ts\" \"vite --host 127.0.0.1\"",
+    "dev:server": "tsx watch src/server/main.ts",
+    "build": "vite build",
+    "start": "tsx src/server/main.ts",
+    "tsc": "tsc --noEmit",
+    "lint": "eslint src test vite.config.ts",
+    "format:check": "prettier --check src test vite.config.ts eslint.config.js",
+    "test": "node --import tsx --test test/*.test.ts",
+    "energy:add": "tsx src/server/energy-cli.ts"
+  },
+  "dependencies": {
+    "@nextclaw/harness": "0.2.24",
+    "dotenv": "^16.6.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.3",
+    "@types/node": "^22.15.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^4.7.0",
+    "concurrently": "^9.1.0",
+    "eslint": "^9.39.3",
+    "globals": "^16.5.0",
+    "prettier": "^3.6.2",
+    "tsx": "^4.19.0",
+    "typescript": "^5.9.0",
+    "typescript-eslint": "^8.56.0",
+    "vite": "^6.3.0"
+  },
+  "packageManager": "pnpm@9.15.1"
+}

@@ -1,0 +1,774 @@
+:root {
+  font-family:
+    -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei",
+    sans-serif;
+  color: #eff0f2;
+  background: #101625;
+  font-synthesis: none;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  min-width: 320px;
+}
+button,
+textarea {
+  font: inherit;
+}
+button {
+  cursor: pointer;
+}
+button:disabled {
+  cursor: not-allowed;
+}
+a {
+  color: inherit;
+  text-decoration: none;
+}
+.shell {
+  min-height: 100vh;
+  background: radial-gradient(
+    circle at 20% 50%,
+    #1a2133 0,
+    #101625 52%,
+    #0d1421 100%
+  );
+  position: relative;
+  overflow: hidden;
+}
+.shell:before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.3;
+  background-image: radial-gradient(#fff 1px, transparent 1px);
+  background-size: 47px 53px;
+  mask-image: linear-gradient(90deg, #000, transparent 75%);
+}
+.topbar,
+.footer {
+  height: 76px;
+  padding: 0 clamp(22px, 4vw, 72px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+  z-index: 1;
+}
+.topbar {
+  border-bottom: 1px solid #ffffff15;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+.brand-mark {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid #eac69b;
+  color: #eac69b;
+  border-radius: 50%;
+  font-size: 23px;
+}
+.brand-dot {
+  color: #eac69b;
+}
+.top-note,
+.footer,
+.eyebrow,
+.planet-caption,
+.spirit-number,
+.composer-hint,
+.usage-note {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.1em;
+}
+.top-note {
+  font-size: 10px;
+  color: #b9bac4;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.top-number {
+  color: #868b9c;
+}
+.live-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #a6d2be;
+  box-shadow: 0 0 12px #a6d2be;
+}
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(390px, 520px);
+  min-height: calc(100vh - 132px);
+  position: relative;
+  z-index: 1;
+}
+.world-panel {
+  padding: clamp(32px, 5vw, 72px) clamp(25px, 6vw, 88px) 30px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+.eyebrow {
+  font-size: 10px;
+  color: #d6b58d;
+  margin: 0 0 21px;
+}
+.world-copy h1 {
+  font-size: clamp(40px, 4.6vw, 70px);
+  line-height: 1.18;
+  letter-spacing: -0.055em;
+  margin: 0;
+  font-weight: 600;
+}
+.world-copy h1 em {
+  font-style: normal;
+  color: #ddbd9f;
+}
+.intro {
+  font-size: 14px;
+  line-height: 2;
+  color: #aeb5c4;
+  max-width: 490px;
+  margin: 24px 0 0;
+}
+.planet-stage {
+  height: 310px;
+  position: relative;
+  margin: 4px auto 0;
+  width: min(100%, 520px);
+  flex-shrink: 0;
+}
+.planet {
+  position: absolute;
+  width: 210px;
+  height: 210px;
+  top: 32px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 30% 26%,
+    #d4b9b0 0,
+    #987e99 23%,
+    #546484 52%,
+    #263650 83%,
+    #162537 100%
+  );
+  box-shadow:
+    inset -22px -27px 55px #172336aa,
+    0 0 80px #978cb93b,
+    0 22px 65px #050b19;
+}
+.planet:before {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  inset: 22px;
+  background:
+    radial-gradient(ellipse at 25% 55%, #d7b6a85e 0, transparent 30%),
+    radial-gradient(ellipse at 75% 45%, #b2a5bd69 0, transparent 22%);
+  filter: blur(10px);
+}
+.planet-glow {
+  position: absolute;
+  width: 280px;
+  height: 260px;
+  top: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #a897c636;
+  filter: blur(55px);
+  border-radius: 50%;
+}
+.orbit {
+  position: absolute;
+  left: 50%;
+  top: 137px;
+  border: 1px solid #e3d5d123;
+  border-radius: 50%;
+  transform: translate(-50%, -50%) rotate(-20deg);
+}
+.orbit-one {
+  width: 420px;
+  height: 130px;
+}
+.orbit-two {
+  width: 500px;
+  height: 178px;
+  transform: translate(-50%, -50%) rotate(24deg);
+  border-color: #c9d2df16;
+}
+.stage-star {
+  position: absolute;
+  color: #eee1d1;
+}
+.star-one {
+  top: 20px;
+  left: 12%;
+  font-size: 19px;
+}
+.star-two {
+  top: 74px;
+  right: 11%;
+  font-size: 23px;
+}
+.star-three {
+  bottom: 73px;
+  right: 21%;
+  font-size: 10px;
+}
+.planet-caption {
+  position: absolute;
+  bottom: 18px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 9px;
+  color: #767d90;
+}
+.spirit-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: auto;
+}
+.spirit-card {
+  text-align: left;
+  min-height: 146px;
+  position: relative;
+  padding: 13px 17px;
+  border: 1px solid #ffffff1c;
+  background: #ffffff08;
+  color: #e9e9ee;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  transition:
+    transform 0.2s,
+    border-color 0.2s,
+    background 0.2s;
+}
+.spirit-card:hover:not(:disabled) {
+  transform: translateY(-3px);
+  background: #ffffff10;
+}
+.spirit-card.selected {
+  border-color: #dbc4ae8f;
+  background: #ffffff12;
+  box-shadow: 0 0 22px #e8c7b110;
+}
+.spirit-number {
+  font-size: 9px;
+  color: #82899a;
+}
+.spirit-avatar {
+  font-size: 29px;
+  line-height: 1;
+  position: absolute;
+  right: 15px;
+  top: 13px;
+}
+.violet .spirit-avatar,
+.presence-avatar.violet {
+  color: #dfc3e9;
+}
+.coral .spirit-avatar,
+.presence-avatar.coral {
+  color: #f0b5a6;
+}
+.mint .spirit-avatar,
+.presence-avatar.mint {
+  color: #b5deca;
+}
+.spirit-label {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.spirit-label strong {
+  font-size: 18px;
+  font-weight: 600;
+}
+.spirit-label small {
+  font-size: 10px;
+  color: #9ea5b4;
+}
+.card-arrow {
+  position: absolute;
+  right: 16px;
+  bottom: 15px;
+  color: #a1a7b5;
+}
+.world-footnote {
+  font-size: 10px;
+  color: #798296;
+  text-align: center;
+  margin: 18px 0 0;
+}
+.conversation-panel {
+  background: #f7f4ef;
+  color: #272c37;
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 132px);
+  border-radius: 22px 0 0 22px;
+  box-shadow: -18px 0 65px #0509154f;
+  overflow: hidden;
+}
+.conversation-header {
+  padding: 35px 34px 22px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.conversation-header .eyebrow {
+  color: #ab806f;
+  margin-bottom: 8px;
+}
+.conversation-header h2 {
+  font-size: 25px;
+  margin: 0;
+  letter-spacing: -0.04em;
+}
+.header-symbol {
+  font-size: 25px;
+  color: #967e92;
+}
+.spirit-presence {
+  margin: 0 34px;
+  padding: 18px 0;
+  display: flex;
+  gap: 13px;
+  align-items: center;
+  border-top: 1px solid #1f24301c;
+  border-bottom: 1px solid #1f24301c;
+}
+.presence-avatar {
+  display: grid;
+  place-items: center;
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  background: #283143;
+  font-size: 25px;
+  flex-shrink: 0;
+}
+.presence-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.presence-copy strong {
+  font-size: 13px;
+}
+.presence-copy span {
+  font-size: 11px;
+  color: #7c8188;
+  line-height: 1.5;
+}
+.energy-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 17px 34px 8px;
+  font-size: 11px;
+  color: #767b85;
+}
+.energy-row strong {
+  margin-left: auto;
+  color: #2d343e;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+}
+.energy-icon {
+  color: #b88c72;
+  font-size: 15px;
+}
+.energy-track {
+  height: 4px;
+  border-radius: 5px;
+  background: #e3dcd3;
+  margin: 0 34px;
+  overflow: hidden;
+}
+.energy-track span {
+  display: block;
+  height: 100%;
+  border-radius: 5px;
+  background: linear-gradient(90deg, #c59a7e, #e2c2aa);
+  transition: width 0.3s;
+}
+.encounter-count {
+  font-size: 10px;
+  color: #97999d;
+  margin: 9px 34px 0;
+}
+.chat-scroll {
+  overflow-y: auto;
+  flex: 1;
+  min-height: 240px;
+  padding: 23px 34px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  scrollbar-color: #d3c9c0 transparent;
+}
+.empty-chat {
+  margin: auto;
+  text-align: center;
+  color: #8d8e95;
+}
+.empty-symbol {
+  font-size: 47px;
+  color: #c09b88;
+  margin-bottom: 12px;
+}
+.empty-chat p {
+  font-size: 14px;
+  color: #626772;
+  margin: 0 0 7px;
+}
+.empty-chat span {
+  font-size: 11px;
+}
+.message {
+  max-width: 85%;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.message.visitor {
+  align-self: flex-end;
+  align-items: flex-end;
+}
+.message-author {
+  font-size: 10px;
+  color: #888e97;
+}
+.message p {
+  padding: 12px 15px;
+  border-radius: 13px 13px 13px 3px;
+  background: #e9e7e2;
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.75;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.message.visitor p {
+  background: #30394a;
+  color: #fff;
+  border-radius: 13px 13px 3px 13px;
+}
+.waiting p {
+  color: #7e8388;
+}
+.dots {
+  letter-spacing: 0.14em;
+}
+.composer-area {
+  padding: 10px 34px 22px;
+  border-top: 1px solid #dcd8d1;
+}
+.composer {
+  border: 1px solid #d6d0c7;
+  border-radius: 12px;
+  background: #fff;
+  display: flex;
+  align-items: flex-end;
+  padding: 7px;
+  box-shadow: 0 4px 18px #1b1b1b0a;
+}
+.composer:focus-within {
+  border-color: #b1917b;
+}
+.composer textarea {
+  border: 0;
+  resize: none;
+  outline: 0;
+  flex: 1;
+  min-width: 0;
+  padding: 9px 8px;
+  background: transparent;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #262b33;
+}
+.composer textarea::placeholder {
+  color: #a5a4a6;
+}
+.composer button {
+  border: 0;
+  background: #313b4c;
+  color: white;
+  width: 37px;
+  height: 37px;
+  border-radius: 8px;
+  font-size: 22px;
+  line-height: 1;
+}
+.composer button:disabled {
+  opacity: 0.35;
+}
+.composer-hint {
+  display: flex;
+  justify-content: space-between;
+  color: #a0a0a2;
+  font-size: 8px;
+  margin-top: 10px;
+}
+.usage-note {
+  color: #8c8984;
+  font-size: 9px;
+  margin: 0 0 7px;
+}
+.error-note {
+  font-size: 11px;
+  color: #9e4c47;
+  margin: 0 0 8px;
+  line-height: 1.5;
+}
+.footer {
+  height: 56px;
+  border-top: 1px solid #ffffff12;
+  color: #6f788b;
+  font-size: 9px;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.muted {
+  color: #abb1bd;
+  font-size: 13px;
+}
+@media (max-width: 1050px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr) minmax(370px, 46%);
+  }
+  .world-panel {
+    padding: 42px 28px 25px;
+  }
+  .spirit-list {
+    gap: 7px;
+  }
+  .spirit-card {
+    padding: 12px;
+    min-height: 130px;
+  }
+  .spirit-label strong {
+    font-size: 15px;
+  }
+  .spirit-label small {
+    font-size: 9px;
+  }
+  .world-copy h1 {
+    font-size: 44px;
+  }
+  .planet-stage {
+    height: 270px;
+  }
+  .planet {
+    width: 190px;
+    height: 190px;
+  }
+  .orbit-one {
+    width: 340px;
+  }
+  .orbit-two {
+    width: 390px;
+  }
+}
+@media (min-width: 751px) and (max-height: 800px) {
+  .world-panel {
+    padding-top: 30px;
+    padding-bottom: 14px;
+  }
+  .world-copy h1 {
+    font-size: clamp(38px, 3.6vw, 50px);
+  }
+  .world-copy .eyebrow {
+    margin-bottom: 12px;
+  }
+  .intro {
+    font-size: 12px;
+    line-height: 1.7;
+    margin-top: 14px;
+  }
+  .planet-stage {
+    height: 205px;
+  }
+  .planet {
+    width: 150px;
+    height: 150px;
+    top: 20px;
+  }
+  .planet-glow {
+    width: 210px;
+    height: 180px;
+  }
+  .orbit {
+    top: 95px;
+  }
+  .orbit-one {
+    width: 310px;
+    height: 100px;
+  }
+  .orbit-two {
+    width: 370px;
+    height: 130px;
+  }
+  .planet-caption {
+    bottom: 2px;
+  }
+  .spirit-card {
+    min-height: 95px;
+  }
+  .spirit-avatar {
+    font-size: 24px;
+  }
+  .world-footnote {
+    margin-top: 8px;
+  }
+  .conversation-panel {
+    height: calc(100vh - 132px);
+    min-height: 0;
+  }
+  .conversation-header {
+    padding-top: 20px;
+    padding-bottom: 12px;
+  }
+  .spirit-presence {
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
+  .energy-row {
+    margin-top: 10px;
+  }
+  .chat-scroll {
+    min-height: 90px;
+  }
+  .composer-area {
+    padding-bottom: 12px;
+  }
+}
+@media (max-width: 750px) {
+  .topbar {
+    height: 60px;
+    padding: 0 20px;
+  }
+  .top-note {
+    font-size: 8px;
+  }
+  .layout {
+    display: flex;
+    flex-direction: column;
+  }
+  .world-panel {
+    padding: 42px 20px 28px;
+  }
+  .world-copy h1 {
+    font-size: 43px;
+  }
+  .intro {
+    font-size: 12px;
+    margin-top: 18px;
+  }
+  .planet-stage {
+    height: 250px;
+    margin: 2px auto 5px;
+  }
+  .planet {
+    top: 32px;
+    width: 170px;
+    height: 170px;
+  }
+  .planet-glow {
+    width: 230px;
+    height: 220px;
+  }
+  .orbit {
+    top: 120px;
+  }
+  .orbit-one {
+    width: 310px;
+    height: 105px;
+  }
+  .orbit-two {
+    width: 360px;
+    height: 130px;
+  }
+  .planet-caption {
+    bottom: 5px;
+  }
+  .spirit-list {
+    gap: 8px;
+  }
+  .spirit-card {
+    min-height: 115px;
+  }
+  .spirit-avatar {
+    font-size: 23px;
+  }
+  .spirit-label strong {
+    font-size: 15px;
+  }
+  .spirit-label small {
+    display: none;
+  }
+  .world-footnote {
+    margin-top: 12px;
+  }
+  .conversation-panel {
+    border-radius: 22px 22px 0 0;
+    min-height: 590px;
+    max-height: 700px;
+  }
+  .conversation-header {
+    padding: 28px 22px 18px;
+  }
+  .spirit-presence {
+    margin: 0 22px;
+  }
+  .energy-row {
+    margin: 16px 22px 8px;
+  }
+  .energy-track {
+    margin: 0 22px;
+  }
+  .encounter-count {
+    margin-left: 22px;
+  }
+  .chat-scroll {
+    padding: 20px 22px;
+  }
+  .composer-area {
+    padding: 10px 22px 20px;
+  }
+  .footer {
+    padding: 0 20px;
+    font-size: 8px;
+  }
+}
