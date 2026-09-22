@@ -1,6 +1,6 @@
 # First World Implementation Plan
 
-> **For Claude:** Execute this plan task-by-task using the repository's development lifecycle; do not delegate without the user's explicit request.
+> 执行约定：按本仓库开发约定逐步交付；未获用户明确要求时不委派。
 
 **Goal:** 交付独立的、可运行的多人共享精灵星球 MVP，并推送 GitHub。
 
@@ -26,12 +26,19 @@
 
 | ID | Required | 判定 | Status |
 | --- | --- | --- | --- |
-| FW-1 | true | 独立项目、文档、GitHub 链接成立，未覆盖旧 `bibo.bot` 或 NextClaw WIP | pending-push |
+| FW-1 | true | 独立项目、文档、GitHub 链接成立，未覆盖旧 `bibo.bot` 或 NextClaw WIP | passed: 两仓库双向链接已推送；旧仓库及原 WIP 未改 |
 | FW-2 | true | 三只独立精灵可经真实模型回应，没有预制回复 | passed: 墨里、皮可、塞拉均经真实模型回应 |
 | FW-3 | true | A/B 访客共享精灵遭遇但不互看原始私聊；刷新/重启保留 | passed: A/B 真实对话与存储测试 |
 | FW-4 | true | 能量随 token 消耗且有计量标记，耗尽拒绝，管理员可补能 | passed: 浏览器真实扣费 + 自动测试 + 本机补能 |
 | FW-5 | true | 独立世界界面可用，主要操作与状态/错误清晰 | passed: 桌面/手机浏览器实测 |
 | FW-6 | true | 运行时与 AI 开发约定有可复用关系，不复制 NextClaw 私人助手前端/规则 | passed: Harness 包依赖 + 独立前端与开发体系文档 |
-| FW-7 | true | TypeScript、自动测试、构建和真实链路验证完成；变更推送 GitHub | not-run |
+| FW-7 | true | TypeScript、自动测试、构建和真实链路验证完成；变更推送 GitHub | passed: `pnpm tsc`、lint、6 项测试、格式检查、构建与真实模型/浏览器链路；两个远端仓库已推送 |
 
 真实外部边界：公网部署需要执行沙箱与滥用治理；用户只要求 GitHub 推送，本计划不部署。模型服务可用性取决于所选真实供应商；不可用时保留真实错误与可配置连接，而不伪造成功。
+
+## 交付核对
+
+- Bibo Planet 公共仓库：<https://github.com/Peiiii/bibo-planet>，初始交付提交 `7a76b83`。
+- NextClaw 中英文 README 关联提交：`7d829cee2`，已推送到远端 `master`。
+- 真实模型链路分别唤醒墨里、皮可、塞拉；A/B 访客测试证实共同遭遇可影响回应，而原始私聊列表隔离。浏览器端实测了桌面、手机与实际能量扣减。
+- NextClaw 本地主工作区已有未提交思考文档；主线同步协调器返回 `LOCAL_WORKTREE_RETRYING`，自动等待其 WIP 安全窗口。远端 `master` 已完成交付，本地主工作区未被强行覆盖。
