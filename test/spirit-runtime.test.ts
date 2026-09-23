@@ -71,3 +71,33 @@ test("unreported usage is estimated and invalid empty responses are not recorded
     await rm(dir, { recursive: true, force: true });
   }
 });
+
+test("the same visitor can continue a multi-turn NextClaw session", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "bibo-multiturn-test-"));
+  try {
+    const store = new WorldStore(dir);
+    await store.initialize();
+    const sessionIds: string[] = [];
+    const runtime = new SpiritRuntime(store, async (input) => {
+      sessionIds.push(input.sessionId);
+      return {
+        schemaVersion: "nextclaw.task/v1",
+        status: "completed",
+        kind: "agent",
+        agentId: input.agentId,
+        sessionId: input.sessionId,
+        runId: `run-${sessionIds.length}`,
+        text: sessionIds.length === 1 ? "第一句话" : "第二句话",
+        completedMessage: null,
+      };
+    });
+
+    await runtime.talk("sela", "alice", "第一轮");
+    await runtime.talk("sela", "alice", "第二轮");
+
+    assert.deepEqual(sessionIds, ["planet:sela:alice", "planet:sela:alice"]);
+    assert.equal(store.conversation("sela", "alice").length, 4);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});

@@ -78,7 +78,7 @@ export function createWorldServer(
         message === "请求过大" || message === "无效 JSON" ? 400 : 502;
       console.error(
         "World request failed:",
-        error instanceof Error ? error.name : "unknown",
+        error instanceof Error ? `${error.name}: ${error.message}` : "unknown",
       );
       const publicError = /\(429\)/.test(message)
         ? "模型服务额度已用完，精灵暂时无法回应。"

@@ -15,7 +15,18 @@ cp .env.example .env
 pnpm dev
 ```
 
-打开 [http://127.0.0.1:5173](http://127.0.0.1:5173)。`pnpm dev` 同时启动前端和世界服务。运行 `pnpm build && pnpm start` 后，也可从 [http://127.0.0.1:3038](http://127.0.0.1:3038) 访问构建版。
+打开 [http://127.0.0.1:5173](http://127.0.0.1:5173)。`pnpm dev` 同时启动前端和世界服务，适合开发，关闭终端后服务会停止。
+
+需要让本机体验版在终端或 Codex 任务结束后继续运行时，使用：
+
+```bash
+pnpm local:start
+# 打开 http://127.0.0.1:3038
+pnpm local:status
+# 不再使用时：pnpm local:stop
+```
+
+后台服务的 PID 与日志放在被 Git 忽略的 `.data/` 中。再次执行 `pnpm local:start` 不会重复启动。
 
 例如已有 NextClaw 配置且其中的模型凭据有效，可在 `.env` 写：
 
@@ -25,6 +36,8 @@ BIBO_NEXTCLAW_CONFIG=/absolute/path/to/.nextclaw/config.json
 ```
 
 `BIBO_NEXTCLAW_CONFIG` 只读取选中供应商的配置，并用 NextClaw 的 secret file reference 在运行时取用 key；不会把 key 复制到此仓库。其他供应商可设置 `BIBO_MODEL=minimax/MiniMax-M2.5` 与 `MINIMAX_API_KEY` 等。 `.env`、`.data` 已被 Git 忽略。免费模型可能拒绝第三方客户端；请使用确实可调用的供应商。
+
+精灵的 Agent、会话、上下文压缩、模型与工具链都由 `@nextclaw/harness` 运行；Bibo Planet 没有另写一套聊天运行时。世界层为每位访客生成稳定的 NextClaw session ID，同一访客可以连续多轮交谈。
 
 初始每只精灵有 250,000 点能量。模型报告 token 时直接按报告扣减；报告不可用时按输入与回复长度估算，并在界面标明。要补能，**先停止服务**，运行：
 

@@ -211,8 +211,8 @@ export class SpiritRuntime {
         defaults: {
           ...defaults,
           model,
-          contextTokens: 8192,
-          reservedContextTokens: 2048,
+          contextTokens: 200_000,
+          reservedContextTokens: 10_000,
           workspace: join(this.store.dataDir, "workspace"),
         },
         list,
