@@ -734,6 +734,80 @@ a {
   text-align: center;
   margin: 20px 0 0;
 }
+.account-dialog {
+  width: min(100%, 540px);
+  max-height: calc(100dvh - 36px);
+  overflow-y: auto;
+}
+.account-dialog .auth-intro {
+  margin-bottom: 18px;
+}
+.account-section {
+  border-top: 1px solid #282e3924;
+  padding: 18px 0 3px;
+}
+.account-section h3 {
+  margin: 0 0 8px;
+  font-size: 16px;
+}
+.account-section p,
+.account-result p {
+  color: #666c76;
+  font-size: 12px;
+  line-height: 1.75;
+  margin: 8px 0 12px;
+}
+.account-section button,
+.account-result button {
+  min-height: 42px;
+  padding: 9px 14px;
+  border-radius: 10px;
+  border: 1px solid #bdb2a8;
+  background: #ffffff;
+  color: #30394a;
+  font-size: 12px;
+  font-weight: 700;
+}
+.account-section button:disabled {
+  opacity: 0.55;
+}
+.account-danger {
+  margin-top: 14px;
+}
+.account-danger h3 {
+  color: #854d4b;
+}
+.account-dialog .delete-confirm {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  color: #4c515d;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.55;
+  margin: 0 0 15px;
+}
+.account-dialog .delete-confirm input {
+  flex: 0 0 16px;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  margin: 2px 0 0;
+  accent-color: #854d4b;
+}
+.account-dialog .delete-submit {
+  border-color: #a7615d;
+  background: #823f3b;
+  color: #fff;
+}
+.account-result {
+  border-top: 1px solid #282e3924;
+  margin-top: 23px;
+  padding-top: 20px;
+}
+.account-result strong {
+  font-size: 15px;
+}
 @media (max-width: 1050px) {
   .layout {
     grid-template-columns: minmax(0, 1fr) minmax(370px, 46%);

@@ -46,7 +46,7 @@ test("registered accounts isolate conversation lists, while both visitors can wa
     runtime,
     auth,
     await deletionFor(dir, auth, store),
-    false,
+    { enabled: false },
   );
   try {
     await new Promise<void>((resolve) =>
@@ -80,6 +80,10 @@ test("registered accounts isolate conversation lists, while both visitors can wa
     const cookieB = b.headers.get("set-cookie")!.split(";")[0]!;
     assert.notEqual(cookieA, cookieB);
     assert.match(a.headers.get("set-cookie")!, /HttpOnly/);
+    assert.deepEqual(
+      await (await fetch(`${base}/api/account/deletion-policy`)).json(),
+      { enabled: false },
+    );
     const notYetOpen = await fetch(`${base}/api/account/delete`, {
       method: "POST",
       headers: { Cookie: cookieA, "Content-Type": "application/json" },
@@ -154,7 +158,7 @@ test("model failure returns an error without recording a turn or successful usag
     runtime,
     auth,
     await deletionFor(dir, auth, store),
-    false,
+    { enabled: false },
   );
   try {
     await new Promise<void>((resolve) =>
@@ -217,7 +221,7 @@ test("personal data export uses only the cookie identity and excludes other trav
     runtime,
     auth,
     await deletionFor(dir, auth, store),
-    false,
+    { enabled: false },
   );
   try {
     await new Promise<void>((resolve) =>
@@ -335,7 +339,12 @@ test("account deletion is cookie-scoped, password-confirmed, and leaves another 
     runtime,
     auth,
     await deletionFor(dir, auth, store),
-    true,
+    {
+      enabled: true,
+      backupRetentionDays: 30,
+      operatorName: "测试运营方",
+      privacyContact: "test@example.invalid",
+    },
   );
   try {
     await new Promise<void>((resolve) =>
@@ -345,6 +354,15 @@ test("account deletion is cookie-scoped, password-confirmed, and leaves another 
     if (!address || typeof address === "string")
       throw new Error("server address unavailable");
     const base = `http://127.0.0.1:${address.port}`;
+    assert.deepEqual(
+      await (await fetch(`${base}/api/account/deletion-policy`)).json(),
+      {
+        enabled: true,
+        backupRetentionDays: 30,
+        operatorName: "测试运营方",
+        privacyContact: "test@example.invalid",
+      },
+    );
     const register = async (name: string) => {
       const response = await fetch(`${base}/api/register`, {
         method: "POST",

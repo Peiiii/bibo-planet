@@ -10,6 +10,7 @@ import { extname, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   findSpirit,
+  type DeletionPolicyView,
   type PersonalDataArchive,
   type SpiritId,
 } from "../shared/world.ts";
@@ -26,7 +27,7 @@ export function createWorldServer(
   runtime: Pick<SpiritRuntime, "talk" | "modelDisclosure">,
   auth: AuthStore,
   deletion: AccountDeletion,
-  deletionEnabled: boolean,
+  deletionPolicy: DeletionPolicyView,
 ): Server {
   return createServer(async (request, response) => {
     try {
@@ -57,6 +58,13 @@ export function createWorldServer(
         sendJson(response, 200, { account });
         return;
       }
+      if (
+        request.method === "GET" &&
+        url.pathname === "/api/account/deletion-policy"
+      ) {
+        sendJson(response, 200, deletionPolicy);
+        return;
+      }
       if (request.method === "GET" && url.pathname === "/api/account/data") {
         if (!account) throw new AuthError(401, "请先登录，再导出你的数据");
         const archive: PersonalDataArchive = {
@@ -70,7 +78,8 @@ export function createWorldServer(
       }
       if (request.method === "POST" && url.pathname === "/api/account/delete") {
         assertMutation(request);
-        if (!deletionEnabled) throw new AuthError(503, "账号在线删除尚未开放");
+        if (!deletionPolicy.enabled)
+          throw new AuthError(503, "账号在线删除尚未开放");
         if (!account || !token)
           throw new AuthError(401, "请先登录，再删除你的账号");
         const body = await readJsonBody(request);

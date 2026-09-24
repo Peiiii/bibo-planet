@@ -67,6 +67,14 @@ export type WorldView = {
   spirits: SpiritView[];
   model: ModelDisclosure;
 };
+export type DeletionPolicyView =
+  | { enabled: false }
+  | {
+      enabled: true;
+      backupRetentionDays: number;
+      operatorName: string;
+      privacyContact: string;
+    };
 export type PersonalDataArchive = {
   format: "bibo-planet-personal-data-v1";
   exportedAt: string;

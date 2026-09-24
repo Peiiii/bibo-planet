@@ -1,9 +1,16 @@
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type FormEvent,
+  type KeyboardEvent,
+} from "react";
 import {
   INITIAL_ENERGY,
   MIN_WAKE_ENERGY,
   type ChatMessage,
   type ChatResponse,
+  type DeletionPolicyView,
   type ModelDisclosure,
   type PersonalDataArchive,
   type SpiritId,
@@ -23,14 +30,52 @@ async function api<T>(path: string, options?: RequestInit): Promise<T> {
   }
   const body = (await response.json()) as T & { error?: string };
   if (!response.ok)
-    throw new Error(body.error || `请求失败：${response.status}`);
+    throw new ApiError(
+      body.error || `请求失败：${response.status}`,
+      response.status,
+    );
   return body;
+}
+
+class ApiError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+  ) {
+    super(message);
+  }
 }
 
 type Account = { id: string; name: string; remainingToday: number };
 
 const sharedMemoryNotice =
   "发送成功的内容会成为精灵的共同记忆；其他旅人可能从它的回应中得知。请勿输入隐私或秘密。";
+
+function handleDialogKeys(
+  event: KeyboardEvent<HTMLElement>,
+  close: () => void,
+): void {
+  if (event.key === "Escape") {
+    event.preventDefault();
+    close();
+  }
+  if (event.key !== "Tab") return;
+  const focusable = Array.from(
+    event.currentTarget.querySelectorAll<HTMLElement>(
+      "button:not(:disabled), input:not(:disabled)",
+    ),
+  );
+  const first = focusable[0];
+  const last = focusable.at(-1);
+  if (!first || !last) return;
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first.focus();
+  }
+}
 
 export function activityLabel(
   lastEncounterAt: string | null,
@@ -139,9 +184,21 @@ export function App() {
   const [authBusy, setAuthBusy] = useState(false);
   const [authError, setAuthError] = useState("");
   const [exporting, setExporting] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
+  const [deletionPolicy, setDeletionPolicy] =
+    useState<DeletionPolicyView | null>(null);
+  const [accountError, setAccountError] = useState("");
+  const [deletePassword, setDeletePassword] = useState("");
+  const [deleteConfirmed, setDeleteConfirmed] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deletionComplete, setDeletionComplete] = useState(false);
+  const [deletionPending, setDeletionPending] = useState<
+    "pending" | "unknown" | null
+  >(null);
   const chatScroll = useRef<HTMLDivElement>(null);
   const conversationPanel = useRef<HTMLElement>(null);
   const authNameInput = useRef<HTMLInputElement>(null);
+  const accountCloseButton = useRef<HTMLButtonElement>(null);
   const pendingRequest = useRef<{
     id: string;
     message: string;
@@ -161,6 +218,26 @@ export function App() {
   useEffect(() => {
     if (authOpen) authNameInput.current?.focus();
   }, [authOpen, authMode]);
+
+  useEffect(() => {
+    if (!accountOpen) return;
+    let active = true;
+    const previous = document.activeElement;
+    accountCloseButton.current?.focus();
+    void api<DeletionPolicyView>("/api/account/deletion-policy")
+      .then((policy) => {
+        if (active) setDeletionPolicy(policy);
+      })
+      .catch(() => {
+        if (active) setAccountError("暂时无法读取账号删除状态，请稍后重试。");
+      });
+    return () => {
+      active = false;
+      if (previous instanceof HTMLElement && previous.isConnected)
+        previous.focus();
+      else document.querySelector<HTMLElement>(".brand")?.focus();
+    };
+  }, [accountOpen]);
 
   useEffect(() => {
     let active = true;
@@ -330,6 +407,24 @@ export function App() {
     }
   }
 
+  function openAccountData() {
+    setDeletionPolicy(null);
+    setAccountError("");
+    setDeletePassword("");
+    setDeleteConfirmed(false);
+    setDeletionComplete(false);
+    setDeletionPending(null);
+    setAccountOpen(true);
+  }
+
+  function closeAccountData() {
+    if (exporting || deleting) return;
+    setAccountOpen(false);
+    setDeletePassword("");
+    setDeleteConfirmed(false);
+    setAccountError("");
+  }
+
   async function exportPersonalData() {
     if (!account || exporting) return;
     if (
@@ -339,7 +434,7 @@ export function App() {
     )
       return;
     setExporting(true);
-    setError("");
+    setAccountError("");
     try {
       const archive = await api<PersonalDataArchive>("/api/account/data");
       const blob = new Blob([JSON.stringify(archive, null, 2)], {
@@ -354,13 +449,61 @@ export function App() {
       link.remove();
       window.setTimeout(() => URL.revokeObjectURL(url), 1_000);
     } catch (cause) {
-      setError(
+      setAccountError(
         `导出未完成：${cause instanceof Error ? cause.message : "请稍后重试"}`,
       );
-      if (window.matchMedia("(max-width: 750px)").matches)
-        conversationPanel.current?.scrollIntoView({ behavior: "smooth" });
     } finally {
       setExporting(false);
+    }
+  }
+
+  async function submitDeletion(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (
+      !account ||
+      !deletionPolicy?.enabled ||
+      !deleteConfirmed ||
+      deleting ||
+      exporting
+    )
+      return;
+    setDeleting(true);
+    setAccountError("");
+    try {
+      await api<{ account: null; deleted: true }>("/api/account/delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: deletePassword, confirm: true }),
+      });
+      setAccount(null);
+      setMessages([]);
+      setDraft("");
+      pendingRequest.current = null;
+      setDeletePassword("");
+      setDeleteConfirmed(false);
+      setDeletionComplete(true);
+      void api<WorldView>("/api/world")
+        .then((world) => setSpirits(world.spirits))
+        .catch(() => undefined);
+    } catch (cause) {
+      const message =
+        cause instanceof Error ? cause.message : "删除尚未完成，请稍后重试。";
+      setAccountError(message);
+      try {
+        const session = await api<{ account: Account | null }>("/api/session");
+        if (!session.account) {
+          setAccount(null);
+          setDeletionPending(
+            cause instanceof ApiError && cause.status === 503
+              ? "pending"
+              : "unknown",
+          );
+        }
+      } catch {
+        // 网络失联时保留当前身份，不把未知状态冒充为删除成功。
+      }
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -390,11 +533,10 @@ export function App() {
               <span>旅人 · {account.name}</span>
               <button
                 type="button"
-                onClick={() => void exportPersonalData()}
-                disabled={exporting || busy}
-                title="文件含你的私人对话，请妥善保存"
+                onClick={openAccountData}
+                disabled={exporting || busy || deleting}
               >
-                {exporting ? "准备中…" : "导出我的数据"}
+                账号与数据
               </button>
               <button
                 type="button"
@@ -668,28 +810,7 @@ export function App() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="auth-title"
-            onKeyDown={(event) => {
-              if (event.key === "Escape") {
-                event.preventDefault();
-                closeAuth();
-              }
-              if (event.key !== "Tab") return;
-              const focusable = Array.from(
-                event.currentTarget.querySelectorAll<HTMLElement>(
-                  "button:not(:disabled), input:not(:disabled)",
-                ),
-              );
-              const first = focusable[0];
-              const last = focusable.at(-1);
-              if (!first || !last) return;
-              if (event.shiftKey && document.activeElement === first) {
-                event.preventDefault();
-                last.focus();
-              } else if (!event.shiftKey && document.activeElement === last) {
-                event.preventDefault();
-                first.focus();
-              }
-            }}
+            onKeyDown={(event) => handleDialogKeys(event, closeAuth)}
           >
             <button
               type="button"
@@ -766,6 +887,151 @@ export function App() {
               {authMode === "register" ? "已经来过？登录" : "第一次来？注册"}
             </button>
             <p className="auth-disclaimer">{sharedMemoryNotice}</p>
+          </section>
+        </div>
+      )}
+      {accountOpen && (
+        <div
+          className="auth-backdrop"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) closeAccountData();
+          }}
+        >
+          <section
+            className="auth-dialog account-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="account-title"
+            onKeyDown={(event) => handleDialogKeys(event, closeAccountData)}
+          >
+            <button
+              type="button"
+              className="auth-close"
+              ref={accountCloseButton}
+              aria-label="关闭账号与数据"
+              onClick={closeAccountData}
+              disabled={exporting || deleting}
+            >
+              ×
+            </button>
+            <p className="eyebrow">YOUR TRACE ON THIS PLANET</p>
+            <h2 id="account-title">账号与数据</h2>
+            {deletionComplete ? (
+              <div className="account-result" role="status">
+                <strong>你在在线世界留下的原文已移除。</strong>
+                <p>
+                  账号与会话已经失效；历史加密备份仍会在公布的期限内保留，其他旅人此前收到的生成回复无法自动收回。
+                </p>
+                <button type="button" onClick={closeAccountData}>
+                  回到星球
+                </button>
+              </div>
+            ) : deletionPending ? (
+              <div className="account-result" role="status">
+                <strong>
+                  {deletionPending === "pending"
+                    ? "删除尚未完成。"
+                    : "删除结果尚未确认。"}
+                </strong>
+                <p>
+                  {deletionPending === "pending"
+                    ? "为避免新的记录产生，你的账号已暂停使用。请联系运营方跟进；不要把暂停视作数据已经全部清除。"
+                    : "当前登录状态已失效，但网络异常使删除结果无法确认。请重新打开网站核实，必要时联系运营方。"}
+                </p>
+                {deletionPolicy?.enabled && (
+                  <p>联系渠道：{deletionPolicy.privacyContact}</p>
+                )}
+              </div>
+            ) : (
+              <>
+                <p className="auth-intro">
+                  你能带走自己的原始记录，查看账号数据的处理方式；精灵和其他旅人的经历并不归任何人独有。
+                </p>
+                <div className="account-section">
+                  <h3>导出我的数据</h3>
+                  <p>
+                    下载账号基本资料、你与三只精灵的私人会话，以及你贡献的共同遭遇。文件可能包含敏感内容，请妥善保管。
+                  </p>
+                  <button
+                    type="button"
+                    className="account-export"
+                    onClick={() => void exportPersonalData()}
+                    disabled={exporting || deleting}
+                  >
+                    {exporting ? "正在准备文件…" : "下载我的数据 ↗"}
+                  </button>
+                </div>
+                <div className="account-section account-danger">
+                  <h3>删除账号与在线记录</h3>
+                  {deletionPolicy?.enabled ? (
+                    <>
+                      <p>
+                        将删除你的账号、所有登录会话、三只精灵与你的私人会话，及你贡献的共同遭遇。其他旅人的原始记录不会因此改写。
+                      </p>
+                      <p>
+                        历史加密备份最多保留{" "}
+                        {deletionPolicy.backupRetentionDays}
+                        天；如果恢复旧快照，删除记录会再次清理你的在线原文。其他旅人此前收到的生成回复无法自动收回。
+                      </p>
+                      <p>
+                        运营者：{deletionPolicy.operatorName} · 联系渠道：
+                        {deletionPolicy.privacyContact}
+                      </p>
+                      <form onSubmit={(event) => void submitDeletion(event)}>
+                        <label htmlFor="delete-password">再次输入密码</label>
+                        <input
+                          id="delete-password"
+                          type="password"
+                          autoComplete="current-password"
+                          value={deletePassword}
+                          onChange={(event) =>
+                            setDeletePassword(event.target.value)
+                          }
+                          required
+                          placeholder="确认这是你的账号"
+                        />
+                        <label
+                          className="delete-confirm"
+                          htmlFor="delete-confirm"
+                        >
+                          <input
+                            id="delete-confirm"
+                            type="checkbox"
+                            checked={deleteConfirmed}
+                            onChange={(event) =>
+                              setDeleteConfirmed(event.target.checked)
+                            }
+                          />
+                          我理解此操作会移除我的在线记录，且不能撤销。
+                        </label>
+                        <button
+                          type="submit"
+                          className="delete-submit"
+                          disabled={
+                            !deleteConfirmed ||
+                            !deletePassword ||
+                            deleting ||
+                            exporting
+                          }
+                        >
+                          {deleting ? "正在处理…" : "删除我的账号"}
+                        </button>
+                      </form>
+                    </>
+                  ) : deletionPolicy ? (
+                    <p>在线删除尚未开放。现在仍可先导出本人的数据。</p>
+                  ) : (
+                    <p>正在读取删除服务状态…</p>
+                  )}
+                </div>
+              </>
+            )}
+            {accountError && (
+              <p className="error-note" role="alert">
+                {accountError}
+              </p>
+            )}
           </section>
         </div>
       )}

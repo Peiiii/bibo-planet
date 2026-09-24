@@ -1,5 +1,6 @@
 import "dotenv/config";
 import { resolve } from "node:path";
+import type { DeletionPolicyView } from "../shared/world.ts";
 import { createWorldServer } from "./server.ts";
 import { AccountDeletion } from "./account-deletion.ts";
 import { AuthStore } from "./auth-store.ts";
@@ -34,16 +35,10 @@ const deletion = new AccountDeletion(
   ),
 );
 await deletion.initialize();
-const deletionEnabled = process.env.BIBO_ACCOUNT_DELETION_ENABLED === "true";
-if (deletionEnabled) {
-  const retentionDays = Number(
-    requiredEnvironment("BIBO_BACKUP_RETENTION_DAYS"),
-  );
-  if (!Number.isSafeInteger(retentionDays) || retentionDays < 1)
-    throw new Error("BIBO_BACKUP_RETENTION_DAYS 必须是正整数");
-  requiredEnvironment("BIBO_PUBLIC_OPERATOR_NAME");
-  requiredEnvironment("BIBO_PRIVACY_CONTACT");
-}
+const deletionPolicy: DeletionPolicyView =
+  process.env.BIBO_ACCOUNT_DELETION_ENABLED === "true"
+    ? publicDeletionPolicy()
+    : { enabled: false };
 const runtime = new SpiritRuntime(store);
 await runtime.start();
 
@@ -53,7 +48,7 @@ const server = createWorldServer(
   runtime,
   auth,
   deletion,
-  deletionEnabled,
+  deletionPolicy,
 );
 server.listen(port, "127.0.0.1", () => {
   console.log(`Bibo Planet listening on http://127.0.0.1:${port}`);
@@ -66,6 +61,20 @@ for (const signal of ["SIGINT", "SIGTERM"] as const) {
       void runtime.stop().finally(() => process.exit(0));
     });
   });
+}
+
+function publicDeletionPolicy(): DeletionPolicyView {
+  const retentionDays = Number(
+    requiredEnvironment("BIBO_BACKUP_RETENTION_DAYS"),
+  );
+  if (!Number.isSafeInteger(retentionDays) || retentionDays < 1)
+    throw new Error("BIBO_BACKUP_RETENTION_DAYS 必须是正整数");
+  return {
+    enabled: true,
+    backupRetentionDays: retentionDays,
+    operatorName: requiredEnvironment("BIBO_PUBLIC_OPERATOR_NAME"),
+    privacyContact: requiredEnvironment("BIBO_PRIVACY_CONTACT"),
+  };
 }
 
 function requiredEnvironment(name: string): string {
