@@ -39,6 +39,18 @@ function activityLabel(lastEncounterAt: string | null): string {
   return `${Math.floor(minutes / 1_440)} 天前有人来过`;
 }
 
+export function renderSpiritText(text: string) {
+  return text
+    .split(/(\*\*[^*\n]+\*\*)/g)
+    .map((part, index) =>
+      part.startsWith("**") && part.endsWith("**") ? (
+        <strong key={index}>{part.slice(2, -2)}</strong>
+      ) : (
+        part
+      ),
+    );
+}
+
 export function App() {
   const [spirits, setSpirits] = useState<SpiritView[]>([]);
   const [selectedId, setSelectedId] = useState<SpiritId>("mori");
@@ -387,7 +399,11 @@ export function App() {
                 <span className="message-author">
                   {message.role === "visitor" ? "你" : selected?.name}
                 </span>
-                <p>{message.text}</p>
+                <p>
+                  {message.role === "spirit"
+                    ? renderSpiritText(message.text)
+                    : message.text}
+                </p>
               </div>
             ))}
             {busy && (
