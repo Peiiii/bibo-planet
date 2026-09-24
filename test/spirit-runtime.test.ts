@@ -158,10 +158,43 @@ test("a later visitor can cue an older shared memory without seeing private hist
       };
     });
     await runtime.talk("sela", "bob", "你还记得蓝色风铃吗？");
-    assert.match(system, /更早共同记录/);
+    assert.match(system, /按本轮问题选取的共同记录/);
     assert.match(system, /蓝色风铃/);
     assert.equal(store.conversation("sela", "bob").length, 2);
     assert.equal(store.conversation("sela", "alice").length, 2);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("unrelated old world lore is not injected into a normal identity question", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "bibo-runtime-grounded-test-"));
+  try {
+    const store = new WorldStore(dir);
+    await store.initialize();
+    await store.recordTurn({
+      spiritId: "mori",
+      visitorId: "alice",
+      message: "你是谁？你能做什么？这颗星球的精灵住在哪里？",
+      reply: "精灵住在潮汐门边。",
+      spent: 20,
+      usageKind: "reported",
+    });
+    let system = "";
+    const runtime = new SpiritRuntime(store, async (input) => {
+      system = String(input.messages[0]?.content);
+      return {
+        content: "我是共享 AI，可以回答问题。",
+        toolCalls: [],
+        finishReason: "stop",
+        usage: { totalTokens: 50 },
+      };
+    });
+    await runtime.talk("mori", "bob", "你是谁？你能做什么？");
+    assert.match(system, /不要主动复述旧记录里的星球/);
+    assert.doesNotMatch(system, /潮汐门边/);
+    await runtime.talk("mori", "bob", "别人说过什么吗？");
+    assert.match(system, /潮汐门边/);
   } finally {
     await rm(dir, { recursive: true, force: true });
   }

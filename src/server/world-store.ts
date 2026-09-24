@@ -163,14 +163,10 @@ export class WorldStore {
     return this.visibleEncounters(spiritId).slice(-limit);
   }
 
-  relevantOlderEncounters = (
-    spiritId: SpiritId,
-    query: string,
-  ): Encounter[] => {
+  relevantEncounters = (spiritId: SpiritId, query: string): Encounter[] => {
     const cues = this.recallCues(query);
     if (cues.length === 0) return [];
-    const older = this.visibleEncounters(spiritId).slice(0, -10);
-    return older
+    return this.visibleEncounters(spiritId)
       .map((encounter, index) => {
         const text =
           `${encounter.message.slice(0, 400)} ${encounter.reply.slice(0, 400)}`

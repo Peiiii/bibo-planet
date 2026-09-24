@@ -102,18 +102,18 @@ test("an older shared clue is recalled after it leaves the recent window", async
         .every((item) => !item.message.includes("蓝色风铃")),
     );
     assert.match(
-      store.relevantOlderEncounters("mori", "你还记得蓝色风铃吗")[0]!.message,
+      store.relevantEncounters("mori", "你还记得蓝色风铃吗")[0]!.message,
       /蓝色风铃/,
     );
     assert.equal(
-      store.relevantOlderEncounters("mori", "Was bluebell mentioned?").length,
+      store.relevantEncounters("mori", "Was bluebell mentioned?").length,
       1,
     );
-    assert.deepEqual(store.relevantOlderEncounters("mori", "你还记得吗"), []);
+    assert.deepEqual(store.relevantEncounters("mori", "你还记得吗"), []);
     const restarted = new WorldStore(dir);
     await restarted.initialize();
     assert.equal(
-      restarted.relevantOlderEncounters("mori", "关于蓝色风铃").length,
+      restarted.relevantEncounters("mori", "关于蓝色风铃").length,
       1,
     );
   } finally {
