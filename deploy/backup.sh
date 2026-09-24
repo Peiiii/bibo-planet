@@ -54,3 +54,7 @@ test -s "$encrypted"
 chmod 600 "$encrypted"
 finished=true
 sha256sum "$encrypted"
+/opt/bibo-ossutil/bin/ossutil cp "$encrypted" \
+  "oss://bibo-planet-backups-peiiii-2026/daily/$(basename "$encrypted")" \
+  --mode EcsRamRole --ecs-role-name BiboPlanetBackupRole \
+  -e oss-cn-hangzhou-internal.aliyuncs.com
