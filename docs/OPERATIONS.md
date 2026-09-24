@@ -2,6 +2,10 @@
 
 状态：记录至 2026-09-25 的实际部署；变更后须同步复核。上线地址为 <https://planet.bibo.bot>，源码为 <https://github.com/Peiiii/bibo-planet>。本手册只存放路径、流程和检查项，不存放任何密钥值或私人对话内容。
 
+## 首次自然定时备份（2026-09-25 04:17，北京时间）
+
+`bibo-planet-backup.timer` 在 04:17:08 CST 自然触发，service 成功退出；下一次预计 2026-09-26 04:15:30 CST。私有 OSS 精确对象 `daily/daily-2026-09-25-041708.z7zppNGu.tar.gz.gpg` 为 33,172 字节、AES256，OSS 修改时间与 systemd 触发时间相同。从 OSS 取回密文的 SHA-256 `604532d27df5b6eb8ec17dc16f8fe379af467dfc786106db6da1b29a02f1666f` 与 ECS 备份服务日志一致；本机私钥流式解密并完整读取 25 条归档目录，未落盘明文。Bibo 与 backup timer 均 active、`NRestarts=0`；公网 Bibo 首页/世界 API、同机原站 200，无边缘密钥源站 403。这证明自然调度、离机上传及该对象可解密读取，不是生产原位覆盖恢复。共享供应商余额仍在已知低余额 1–10 元区间，不是 Bibo 独立费用上限。
+
 ## 当前文件能力上线锚点（2026-09-25 01:26，北京时间）
 
 GitHub `master`、ECS Bibo 后端同为 `25c6581319b53fd22be313d1ca239c74fffb1abd`，Cloudflare Worker 版本 `85460cac-1093-4f28-9542-118f5386823d`、静态 JS `index-BdR_WfRE.js`。只更新 Bibo 自身服务与 Worker，NextClaw SDK 的 19 包固定快照未变，同机旧站未重启。前端明确说明 AI 有自己的共享文本文件，并提示内容可能被其他用户间接获知。真实 NextClaw Agent 的工具闭集从两项笔记工具扩展为 `bibo_file_list`、`bibo_file_read`、`bibo_file_write` 共五项；只能列/读自己的工作区，写入自己的 `files/`，不可运行代码、访问网络、宿主文件或其他 AI 目录。`AGENTS.md`/`IDENTITY.md` 只读，`MEMORY.md` 仍用原笔记工具。`restrictToWorkspace` 仍不被视为 OS 沙箱。
