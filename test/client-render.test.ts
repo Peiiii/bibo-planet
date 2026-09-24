@@ -2,7 +2,12 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { activityLabel, renderSpiritText } from "../src/client/app.tsx";
+import { App, activityLabel, renderSpiritText } from "../src/client/app.tsx";
+
+test("conversation identifies the spirit as AI before a visitor sends a message", () => {
+  const html = renderToStaticMarkup(createElement(App));
+  assert.match(html, /AI 精灵 · 回复由模型生成/);
+});
 
 test("spirit emphasis renders without exposing raw markup or HTML", () => {
   const content = renderSpiritText("叫它**追风签**。<script>no</script>");

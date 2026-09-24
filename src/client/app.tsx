@@ -377,7 +377,7 @@ export function App() {
         >
           <div className="conversation-header">
             <div>
-              <p className="eyebrow">AN OPEN CONVERSATION</p>
+              <p className="eyebrow">AI 精灵 · 回复由模型生成</p>
               <h2>{selected ? `与 ${selected.name} 说话` : "选择一只精灵"}</h2>
             </div>
             <span className="header-symbol" aria-hidden="true">
@@ -429,6 +429,9 @@ export function App() {
               <div className={`message ${message.role}`} key={message.id}>
                 <span className="message-author">
                   {message.role === "visitor" ? "你" : selected?.name}
+                  {message.role === "spirit" && (
+                    <span className="ai-origin">AI 生成</span>
+                  )}
                 </span>
                 <p>
                   {message.role === "spirit"

@@ -509,6 +509,11 @@ a {
   font-size: 10px;
   color: #888e97;
 }
+.ai-origin {
+  margin-left: 7px;
+  color: #856b5f;
+  font-weight: 600;
+}
 .message p {
   padding: 12px 15px;
   border-radius: 13px 13px 13px 3px;
