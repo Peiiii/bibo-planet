@@ -24,6 +24,8 @@
 
 已新增每日 `bibo-planet-backup.timer`，北京时间 04:15 左右调用 `deploy/backup.sh`：检查世界文件和 GPG 公钥 → 仅停 Bibo 服务以取得一致归档 → 立刻重启 Bibo → 公钥加密 → 通过 `BiboPlanetBackupRole` 将加密文件上传 `oss://bibo-planet-backups-peiiii-2026/daily/`。RAM 角色只获准对这个前缀执行 `oss:PutObject`，没有 OSS 读取、列举或删除权，也没有长期 AccessKey；上传工具为 ECS 上校验官方 SHA-256 后安装的 `/opt/bibo-ossutil/bin/ossutil`。2026-09-24 10:57 手动启动**同一个 systemd 备份服务**成功，Bibo 自动恢复 active；新对象 `daily-2026-09-24-105745.eHMQDDOn.tar.gz.gpg` 已从 OSS 下载，SHA-256 `33f5cb84af8dc4e1d414545965a08dc360fe5dbf374c46704ec17deffcb96683` 与 ECS 一致，并可在本机流式解密读出 8 个归档条目。定时器已 enabled/active，下一次计划 2026-09-25 04:15 左右；**自然定时触发仍待明日观察**。
 
+2026-09-24 12:53 使用有权读取桶配置的本机阿里云 CLI 查询 OSS `GetBucketLifecycle`，返回 `NoSuchLifecycle`；`daily/` 实际 4 个对象、15,495 字节。当前**没有**自动到期清理，ECS 上 `deploy/backup.sh` 成功上传后也会保留本地加密档案。删除策略和灾难恢复时防止已删除旅人数据回流须先设计、验证再配置；在此之前不要对访客承诺固定保留期或“删除后所有备份消失”。本次只读查询，没有改动桶和任何备份。
+
 2026-09-24 11:07 更新应用前再次手动运行同一备份 service，上传加密对象 `daily-2026-09-24-110754.nZkVicP6.tar.gz.gpg` 成功，服务器源文件 SHA-256 为 `9ce499fd6d5668734624fc7ceb00744b0c0c70860c91d71ac6aa3002e9980fc6`，Bibo 与定时器均恢复 active。第二个对象也已从 OSS 下载，SHA-256 与源文件一致，本机私钥流式解密后可列出 8 个归档条目；临时下载副本已删除。
 
 2026-09-24 11:28 后端再次更新前用同一服务创建加密对象 `daily-2026-09-24-112757.1IRHOL1L.tar.gz.gpg`，源文件 SHA-256 为 `8e2ab0aa93ebedeccc9c4a3033b598184cb83a64579b14b0a0ba1c935c2557ab`。该对象也已从私有 OSS 取回，哈希一致，私钥流式解密可列出 8 个归档条目；临时副本已删除。只观察到同一 service 手动实跑，仍未观察到 2026-09-25 首次自然定时触发。
