@@ -94,6 +94,152 @@ test("several travelers behind one address can register", async () => {
   }
 });
 
+test("a durable world registration limit arbitrates concurrent final places", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "bibo-register-budget-test-"));
+  try {
+    const auth = new AuthStore(dir);
+    await auth.initialize();
+    await auth.register("旧旅人", "ten-characters-or-more", "203.0.113.80");
+    const path = join(dir, "accounts.json");
+    const state = JSON.parse(await readFile(path, "utf8")) as Record<
+      string,
+      unknown
+    >;
+    state.registrationDay = new Intl.DateTimeFormat("sv-SE", {
+      timeZone: "Asia/Shanghai",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(new Date());
+    state.registrationCount = 239;
+    await writeFile(path, JSON.stringify(state));
+
+    const restarted = new AuthStore(dir);
+    await restarted.initialize();
+    const results = await Promise.allSettled([
+      restarted.register(
+        "甲号新旅人",
+        "ten-characters-or-more",
+        "203.0.113.81",
+      ),
+      restarted.register(
+        "乙号新旅人",
+        "ten-characters-or-more",
+        "203.0.113.82",
+      ),
+    ]);
+    assert.equal(
+      results.filter((result) => result.status === "fulfilled").length,
+      1,
+    );
+    assert.equal(
+      results.filter((result) => result.status === "rejected").length,
+      1,
+    );
+    const exhausted = new AuthStore(dir);
+    await exhausted.initialize();
+    await assert.rejects(
+      exhausted.register(
+        "再来一位旅人",
+        "ten-characters-or-more",
+        "203.0.113.83",
+      ),
+      /注册名额已用完/,
+    );
+    const saved = JSON.parse(await readFile(path, "utf8")) as {
+      accounts: unknown[];
+      registrationCount: number;
+    };
+    assert.equal(saved.accounts.length, 2);
+    assert.equal(saved.registrationCount, 240);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("legacy account state derives today's registration floor", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "bibo-register-legacy-test-"));
+  try {
+    const auth = new AuthStore(dir);
+    await auth.initialize();
+    await auth.register("旧旅人", "ten-characters-or-more", "203.0.113.84");
+    const path = join(dir, "accounts.json");
+    const saved = JSON.parse(await readFile(path, "utf8")) as Record<
+      string,
+      unknown
+    >;
+    delete saved.registrationDay;
+    delete saved.registrationCount;
+    await writeFile(path, JSON.stringify(saved));
+    const restarted = new AuthStore(dir);
+    await restarted.initialize();
+    await restarted.register(
+      "新旅人",
+      "ten-characters-or-more",
+      "203.0.113.85",
+    );
+    const upgraded = JSON.parse(await readFile(path, "utf8")) as {
+      registrationCount: number;
+    };
+    assert.equal(upgraded.registrationCount, 2);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("the in-memory IP attempt table stays bounded", async () => {
+  const auth = new AuthStore("/unused");
+  const limiter = auth as unknown as {
+    limitAttempts: (key: string, count: number, windowMs: number) => void;
+    attempts: Map<string, unknown>;
+  };
+  for (let index = 0; index < 10_050; index += 1)
+    limiter.limitAttempts(`login:${index}`, 10, 600_000);
+  assert.ok(limiter.attempts.size <= 10_000);
+});
+
+test("distributed login attempts hit a world-wide short-window ceiling", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "bibo-login-budget-test-"));
+  try {
+    const auth = new AuthStore(dir);
+    await auth.initialize();
+    for (let index = 0; index < 600; index += 1) {
+      await assert.rejects(
+        auth.login(
+          "不存在的旅人",
+          "wrong-password",
+          `198.51.${Math.floor(index / 254)}.${(index % 254) + 1}`,
+        ),
+        /昵称或密码不正确/,
+      );
+    }
+    await assert.rejects(
+      auth.login("不存在的旅人", "wrong-password", "203.0.113.86"),
+      /操作太频繁/,
+    );
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("distributed invalid registration attempts hit a world-wide short-window ceiling", async () => {
+  const auth = new AuthStore("/unused");
+  for (let index = 0; index < 1_200; index += 1) {
+    await assert.rejects(
+      auth.register(
+        "!",
+        "ten-characters-or-more",
+        `198.18.${Math.floor(index / 254)}.${(index % 254) + 1}`,
+      ),
+      /昵称需要/,
+    );
+  }
+  await assert.rejects(
+    auth.register("!", "ten-characters-or-more", "203.0.113.87"),
+    /操作太频繁/,
+  );
+});
+
 test("production account initialization refuses a missing data file", async () => {
   const dir = await mkdtemp(join(tmpdir(), "bibo-auth-required-test-"));
   try {

@@ -14,6 +14,8 @@ const SESSION_DAYS = 30;
 const USER_DAILY_LIMIT = 12;
 const USER_DAILY_ATTEMPT_LIMIT = 18;
 const WORLD_DAILY_LIMIT = 240;
+const WORLD_DAILY_REGISTRATION_LIMIT = 240;
+const MAX_TRACKED_ATTEMPT_KEYS = 10_000;
 
 type Account = {
   id: string;
@@ -34,6 +36,8 @@ type AuthState = {
   accounts: Account[];
   sessions: Record<string, Session>;
   worldAttemptCarry?: { day: string; count: number };
+  registrationDay?: string;
+  registrationCount?: number;
 };
 
 export type AccountView = { id: string; name: string; remainingToday: number };
@@ -51,7 +55,11 @@ export class AuthStore {
   private state: AuthState = { version: 1, accounts: [], sessions: {} };
   private operation: Promise<unknown> = Promise.resolve();
   private readonly inFlight = new Set<string>();
-  private readonly attempts = new Map<string, number[]>();
+  private readonly attempts = new Map<
+    string,
+    { timestamps: number[]; expiresAt: number }
+  >();
+  private nextAttemptSweep = 0;
 
   constructor(private readonly dataDir: string) {}
 
@@ -88,21 +96,25 @@ export class AuthStore {
     clientIp: string,
   ): Promise<{ account: AccountView; token: string }> {
     this.limitAttempts(`register:${clientIp}`, 20, 24 * 60 * 60_000);
+    this.limitAttempts("register:global", 1_200, 10 * 60_000);
     const displayName = name.normalize("NFC").trim();
     const normalizedName = displayName.toLocaleLowerCase("zh-CN");
     if (!/^[\p{L}\p{N}_]{3,24}$/u.test(displayName))
       throw new AuthError(400, "昵称需要 3–24 个汉字、字母、数字或下划线");
     if (password.length < 10 || password.length > 128)
       throw new AuthError(400, "密码需要 10–128 个字符");
-    const passwordHash = await hashPassword(password);
     return await this.serial(async () => {
+      const today = dayKey();
+      const registrationCount = this.registrationsToday(today);
+      if (registrationCount >= WORLD_DAILY_REGISTRATION_LIMIT)
+        throw new AuthError(429, "今天的注册名额已用完，明天再试");
       if (
         this.state.accounts.some(
           (account) => account.normalizedName === normalizedName,
         )
       )
         throw new AuthError(409, "这个昵称已经有人使用");
-      const today = dayKey();
+      const passwordHash = await hashPassword(password);
       const account: Account = {
         id: randomUUID(),
         name: displayName,
@@ -117,6 +129,8 @@ export class AuthStore {
       const token = randomBytes(32).toString("base64url");
       const next: AuthState = {
         ...this.state,
+        registrationDay: today,
+        registrationCount: registrationCount + 1,
         accounts: [...this.state.accounts, account],
         sessions: {
           ...this.state.sessions,
@@ -138,6 +152,7 @@ export class AuthStore {
     clientIp: string,
   ): Promise<{ account: AccountView; token: string }> {
     this.limitAttempts(`login:${clientIp}`, 10, 10 * 60_000);
+    this.limitAttempts("login:global", 600, 10 * 60_000);
     const normalizedName = name
       .normalize("NFC")
       .trim()
@@ -393,15 +408,42 @@ export class AuthStore {
     );
   }
 
+  private registrationsToday(today: string): number {
+    const persisted =
+      this.state.registrationDay === today
+        ? (this.state.registrationCount ?? 0)
+        : 0;
+    const existing = this.state.accounts.filter(
+      (account) => dayKey(new Date(account.createdAt)) === today,
+    ).length;
+    return Math.max(persisted, existing);
+  }
+
   private limitAttempts(key: string, count: number, windowMs: number): void {
     const now = Date.now();
-    const recent = (this.attempts.get(key) ?? []).filter(
+    const recent = (this.attempts.get(key)?.timestamps ?? []).filter(
       (at) => at > now - windowMs,
     );
     if (recent.length >= count)
       throw new AuthError(429, "操作太频繁，请稍后再试");
     recent.push(now);
-    this.attempts.set(key, recent);
+    if (
+      !this.attempts.has(key) &&
+      this.attempts.size >= MAX_TRACKED_ATTEMPT_KEYS
+    ) {
+      if (now >= this.nextAttemptSweep) {
+        for (const [trackedKey, entry] of this.attempts) {
+          if (entry.expiresAt <= now) this.attempts.delete(trackedKey);
+        }
+        this.nextAttemptSweep = now + 60_000;
+      }
+      if (this.attempts.size >= MAX_TRACKED_ATTEMPT_KEYS) {
+        const oldest = this.attempts.keys().next().value;
+        if (oldest) this.attempts.delete(oldest);
+      }
+    }
+    this.attempts.delete(key);
+    this.attempts.set(key, { timestamps: recent, expiresAt: now + windowMs });
   }
 
   private async serial<T>(action: () => Promise<T>): Promise<T> {
@@ -421,13 +463,13 @@ export class AuthStore {
   }
 }
 
-function dayKey(): string {
+function dayKey(date = new Date()): string {
   return new Intl.DateTimeFormat("sv-SE", {
     timeZone: "Asia/Shanghai",
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
-  }).format(new Date());
+  }).format(date);
 }
 
 function tokenHash(token: string): string {
