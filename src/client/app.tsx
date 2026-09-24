@@ -81,6 +81,7 @@ export function App() {
   const [authPassword, setAuthPassword] = useState("");
   const [authBusy, setAuthBusy] = useState(false);
   const [authError, setAuthError] = useState("");
+  const [exporting, setExporting] = useState(false);
   const chatScroll = useRef<HTMLDivElement>(null);
   const conversationPanel = useRef<HTMLElement>(null);
   const authNameInput = useRef<HTMLInputElement>(null);
@@ -271,6 +272,53 @@ export function App() {
     }
   }
 
+  async function exportConversations() {
+    if (!account || exporting) return;
+    setExporting(true);
+    setError("");
+    try {
+      const world = await api<WorldView>("/api/world");
+      if (world.spirits.length === 0)
+        throw new Error("暂时没有可导出的精灵对话");
+      const conversations = await Promise.all(
+        world.spirits.map(async (spirit) => ({
+          spirit: { id: spirit.id, name: spirit.name },
+          messages: (
+            await api<{ messages: ChatMessage[] }>(
+              `/api/spirits/${spirit.id}/conversation`,
+            )
+          ).messages,
+        })),
+      );
+      const exportedAt = new Date().toISOString();
+      const archive = {
+        format: "bibo-planet-conversations-v1",
+        exportedAt,
+        account: { id: account.id, name: account.name },
+        conversations,
+      };
+      const blob = new Blob([JSON.stringify(archive, null, 2)], {
+        type: "application/json;charset=utf-8",
+      });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `bibo-planet-conversations-${exportedAt.slice(0, 10)}.json`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1_000);
+    } catch (cause) {
+      setError(
+        `导出未完成：${cause instanceof Error ? cause.message : "请稍后重试"}`,
+      );
+      if (window.matchMedia("(max-width: 750px)").matches)
+        conversationPanel.current?.scrollIntoView({ behavior: "smooth" });
+    } finally {
+      setExporting(false);
+    }
+  }
+
   function selectSpirit(spiritId: SpiritId) {
     setSelectedId(spiritId);
     if (window.matchMedia("(max-width: 750px)").matches) {
@@ -295,7 +343,18 @@ export function App() {
           {account ? (
             <>
               <span>旅人 · {account.name}</span>
-              <button type="button" onClick={() => void logout()}>
+              <button
+                type="button"
+                onClick={() => void exportConversations()}
+                disabled={exporting}
+              >
+                {exporting ? "准备中…" : "导出对话"}
+              </button>
+              <button
+                type="button"
+                onClick={() => void logout()}
+                disabled={exporting}
+              >
                 退出
               </button>
             </>

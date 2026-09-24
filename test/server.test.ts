@@ -52,20 +52,24 @@ test("registered accounts isolate conversation lists, while both visitors can wa
       }),
     });
     assert.equal(sent.status, 200);
-    const convoA = await fetch(`${base}/api/spirits/mori/conversation`, {
-      headers: { Cookie: cookieA },
-    });
-    const convoB = await fetch(`${base}/api/spirits/mori/conversation`, {
-      headers: { Cookie: cookieB },
-    });
-    assert.equal(
-      ((await convoA.json()) as { messages: unknown[] }).messages.length,
-      2,
-    );
-    assert.equal(
-      ((await convoB.json()) as { messages: unknown[] }).messages.length,
-      0,
-    );
+    for (const spiritId of ["mori", "piko", "sela"]) {
+      const convoA = await fetch(
+        `${base}/api/spirits/${spiritId}/conversation`,
+        { headers: { Cookie: cookieA } },
+      );
+      const convoB = await fetch(
+        `${base}/api/spirits/${spiritId}/conversation`,
+        { headers: { Cookie: cookieB } },
+      );
+      assert.equal(
+        ((await convoA.json()) as { messages: unknown[] }).messages.length,
+        spiritId === "mori" ? 2 : 0,
+      );
+      assert.equal(
+        ((await convoB.json()) as { messages: unknown[] }).messages.length,
+        0,
+      );
+    }
     assert.equal(store.world().spirits[0]?.encounters, 1);
   } finally {
     await new Promise<void>((resolve) => server.close(() => resolve()));
