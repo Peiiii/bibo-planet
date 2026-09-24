@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
@@ -71,6 +71,127 @@ test("startup removes expired session hashes without logging out a live session"
     };
     assert.equal(compacted.sessions[expiredHash], undefined);
     assert.equal(Object.keys(compacted.sessions).length, 1);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("new sessions prune expired hashes without a service restart", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "bibo-live-session-prune-test-"));
+  try {
+    const auth = new AuthStore(dir);
+    await auth.initialize();
+    const first = await auth.register(
+      "会话清理旅人",
+      "ten-characters-or-more",
+      "203.0.113.40",
+    );
+    const firstHash = createHash("sha256").update(first.token).digest("hex");
+    const internal = auth as unknown as {
+      state: { sessions: Record<string, { expiresAt: number }> };
+    };
+    internal.state.sessions[firstHash]!.expiresAt = Date.now() - 1;
+
+    const second = await auth.login(
+      "会话清理旅人",
+      "ten-characters-or-more",
+      "203.0.113.41",
+    );
+    const path = join(dir, "accounts.json");
+    const afterLogin = JSON.parse(await readFile(path, "utf8")) as {
+      sessions: Record<string, { expiresAt: number }>;
+    };
+    assert.equal(afterLogin.sessions[firstHash], undefined);
+    assert.equal(auth.account(second.token)?.id, first.account.id);
+
+    const secondHash = createHash("sha256").update(second.token).digest("hex");
+    internal.state.sessions[secondHash]!.expiresAt = Date.now() - 1;
+    await auth.register("新来旅人", "ten-characters-or-more", "203.0.113.42");
+    const afterRegister = JSON.parse(await readFile(path, "utf8")) as {
+      sessions: Record<string, unknown>;
+    };
+    assert.equal(afterRegister.sessions[secondHash], undefined);
+    assert.equal(Object.keys(afterRegister.sessions).length, 1);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("a ninth session replaces only the oldest session for that account", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "bibo-session-ceiling-test-"));
+  try {
+    const auth = new AuthStore(dir);
+    await auth.initialize();
+    const first = await auth.register(
+      "多设备旅人",
+      "ten-characters-or-more",
+      "203.0.113.43",
+    );
+    const other = await auth.register(
+      "另一位旅人",
+      "ten-characters-or-more",
+      "203.0.113.44",
+    );
+    const tokens = [first.token];
+    for (let index = 0; index < 7; index += 1) {
+      const session = await auth.login(
+        "多设备旅人",
+        "ten-characters-or-more",
+        "203.0.113.45",
+      );
+      tokens.push(session.token);
+    }
+    for (const token of tokens)
+      assert.equal(auth.account(token)?.id, first.account.id);
+
+    const newest = await auth.login(
+      "多设备旅人",
+      "ten-characters-or-more",
+      "203.0.113.45",
+    );
+    assert.equal(auth.account(first.token), null);
+    for (const token of tokens.slice(1))
+      assert.equal(auth.account(token)?.id, first.account.id);
+    assert.equal(auth.account(newest.token)?.id, first.account.id);
+    assert.equal(auth.account(other.token)?.id, other.account.id);
+    const saved = JSON.parse(
+      await readFile(join(dir, "accounts.json"), "utf8"),
+    ) as {
+      sessions: Record<string, unknown>;
+    };
+    assert.equal(Object.keys(saved.sessions).length, 9);
+    const restarted = new AuthStore(dir);
+    await restarted.initialize();
+    assert.equal(restarted.account(first.token), null);
+    assert.equal(restarted.account(newest.token)?.id, first.account.id);
+    assert.equal(restarted.account(other.token)?.id, other.account.id);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("unknown and repeated logout do not rewrite the account state", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "bibo-logout-noop-test-"));
+  try {
+    const auth = new AuthStore(dir);
+    await auth.initialize();
+    const registered = await auth.register(
+      "退出旅人",
+      "ten-characters-or-more",
+      "203.0.113.46",
+    );
+    const path = join(dir, "accounts.json");
+    const before = await stat(path);
+    await auth.logout("A".repeat(43));
+    assert.equal((await stat(path)).ino, before.ino);
+    assert.equal(auth.account(registered.token)?.id, registered.account.id);
+
+    await auth.logout(registered.token);
+    assert.equal(auth.account(registered.token), null);
+    const after = await stat(path);
+    assert.notEqual(after.ino, before.ino);
+    await auth.logout(registered.token);
+    assert.equal((await stat(path)).ino, after.ino);
   } finally {
     await rm(dir, { recursive: true, force: true });
   }

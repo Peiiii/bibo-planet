@@ -16,6 +16,7 @@ const USER_DAILY_ATTEMPT_LIMIT = 18;
 const WORLD_DAILY_LIMIT = 240;
 const WORLD_DAILY_REGISTRATION_LIMIT = 240;
 const MAX_TRACKED_ATTEMPT_KEYS = 10_000;
+const MAX_ACTIVE_SESSIONS_PER_ACCOUNT = 8;
 
 type Account = {
   id: string;
@@ -74,11 +75,7 @@ export class AuthStore {
       )
         throw new Error("账号数据格式无效");
       const now = Date.now();
-      const sessions = Object.fromEntries(
-        Object.entries(state.sessions).filter(
-          ([, session]) => session.expiresAt > now,
-        ),
-      );
+      const sessions = activeSessions(state.sessions, now);
       const next = { ...state, sessions };
       if (Object.keys(sessions).length !== Object.keys(state.sessions).length)
         await this.persist(next);
@@ -127,16 +124,17 @@ export class AuthStore {
         attemptCount: 0,
       };
       const token = randomBytes(32).toString("base64url");
+      const now = Date.now();
       const next: AuthState = {
         ...this.state,
         registrationDay: today,
         registrationCount: registrationCount + 1,
         accounts: [...this.state.accounts, account],
         sessions: {
-          ...this.state.sessions,
+          ...activeSessions(this.state.sessions, now),
           [tokenHash(token)]: {
             accountId: account.id,
-            expiresAt: Date.now() + SESSION_DAYS * 86_400_000,
+            expiresAt: now + SESSION_DAYS * 86_400_000,
           },
         },
       };
@@ -172,15 +170,23 @@ export class AuthStore {
       );
       if (!current) throw new AuthError(401, "昵称或密码不正确");
       const token = randomBytes(32).toString("base64url");
+      const now = Date.now();
+      const sessions = activeSessions(this.state.sessions, now);
+      const ownSessions = Object.entries(sessions)
+        .filter(([, session]) => session.accountId === account.id)
+        .sort((a, b) => a[1].expiresAt - b[1].expiresAt);
+      for (const [hash] of ownSessions.slice(
+        0,
+        Math.max(0, ownSessions.length - MAX_ACTIVE_SESSIONS_PER_ACCOUNT + 1),
+      ))
+        delete sessions[hash];
+      sessions[tokenHash(token)] = {
+        accountId: account.id,
+        expiresAt: now + SESSION_DAYS * 86_400_000,
+      };
       const next: AuthState = {
         ...this.state,
-        sessions: {
-          ...this.state.sessions,
-          [tokenHash(token)]: {
-            accountId: account.id,
-            expiresAt: Date.now() + SESSION_DAYS * 86_400_000,
-          },
-        },
+        sessions,
       };
       await this.persist(next);
       this.state = next;
@@ -225,8 +231,10 @@ export class AuthStore {
   async logout(token: string | undefined): Promise<void> {
     if (!token) return;
     await this.serial(async () => {
+      const hash = tokenHash(token);
+      if (!this.state.sessions[hash]) return;
       const sessions = { ...this.state.sessions };
-      delete sessions[tokenHash(token)];
+      delete sessions[hash];
       const next = { ...this.state, sessions };
       await this.persist(next);
       this.state = next;
@@ -461,6 +469,15 @@ export class AuthStore {
     await writeFile(temporary, JSON.stringify(state), { mode: 0o600 });
     await rename(temporary, this.path);
   }
+}
+
+function activeSessions(
+  sessions: Record<string, Session>,
+  now: number,
+): Record<string, Session> {
+  return Object.fromEntries(
+    Object.entries(sessions).filter(([, session]) => session.expiresAt > now),
+  );
 }
 
 function dayKey(date = new Date()): string {

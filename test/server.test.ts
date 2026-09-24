@@ -138,6 +138,42 @@ test("registered accounts isolate conversation lists, while both visitors can wa
       );
     }
     assert.equal(store.world().spirits[0]?.encounters, 1);
+
+    const unknownLogout = await fetch(`${base}/api/logout`, {
+      method: "POST",
+      headers: { Cookie: `bibo_session=${"A".repeat(43)}` },
+    });
+    assert.equal(unknownLogout.status, 200);
+    assert.deepEqual(await unknownLogout.json(), { account: null });
+    const stillLoggedIn = await fetch(`${base}/api/session`, {
+      headers: { Cookie: cookieA },
+    });
+    assert.equal(
+      ((await stillLoggedIn.json()) as { account: { id: string } }).account.id,
+      auth.account(cookieA.split("=")[1])?.id,
+    );
+
+    const logout = await fetch(`${base}/api/logout`, {
+      method: "POST",
+      headers: { Cookie: cookieA },
+    });
+    assert.equal(logout.status, 200);
+    assert.match(logout.headers.get("set-cookie")!, /Max-Age=0/);
+    assert.deepEqual(await logout.json(), { account: null });
+    assert.deepEqual(
+      await (
+        await fetch(`${base}/api/session`, { headers: { Cookie: cookieA } })
+      ).json(),
+      { account: null },
+    );
+    const otherStillLoggedIn = await fetch(`${base}/api/session`, {
+      headers: { Cookie: cookieB },
+    });
+    assert.equal(
+      ((await otherStillLoggedIn.json()) as { account: { name: string } })
+        .account.name,
+      "bobby",
+    );
   } finally {
     await new Promise<void>((resolve) => server.close(() => resolve()));
     await rm(dir, { recursive: true, force: true });
