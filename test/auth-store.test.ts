@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -33,6 +34,43 @@ test("registration, login, quota and logout survive a store restart", async () =
     await restarted.logout(registered.token);
     assert.equal(restarted.account(registered.token), null);
     assert.equal(restarted.account(loggedIn.token)?.id, registered.account.id);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("startup removes expired session hashes without logging out a live session", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "bibo-expired-session-test-"));
+  try {
+    const auth = new AuthStore(dir);
+    await auth.initialize();
+    const first = await auth.register(
+      "过期会话旅人",
+      "ten-characters-or-more",
+      "203.0.113.1",
+    );
+    const second = await auth.login(
+      "过期会话旅人",
+      "ten-characters-or-more",
+      "203.0.113.2",
+    );
+    const path = join(dir, "accounts.json");
+    const saved = JSON.parse(await readFile(path, "utf8")) as {
+      sessions: Record<string, { expiresAt: number }>;
+    };
+    const expiredHash = createHash("sha256").update(first.token).digest("hex");
+    saved.sessions[expiredHash]!.expiresAt = Date.now() - 1;
+    await writeFile(path, JSON.stringify(saved));
+
+    const restarted = new AuthStore(dir);
+    await restarted.initialize();
+    assert.equal(restarted.account(first.token), null);
+    assert.equal(restarted.account(second.token)?.id, first.account.id);
+    const compacted = JSON.parse(await readFile(path, "utf8")) as {
+      sessions: Record<string, unknown>;
+    };
+    assert.equal(compacted.sessions[expiredHash], undefined);
+    assert.equal(Object.keys(compacted.sessions).length, 1);
   } finally {
     await rm(dir, { recursive: true, force: true });
   }

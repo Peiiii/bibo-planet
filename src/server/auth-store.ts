@@ -65,7 +65,16 @@ export class AuthStore {
         !state.sessions
       )
         throw new Error("账号数据格式无效");
-      this.state = state;
+      const now = Date.now();
+      const sessions = Object.fromEntries(
+        Object.entries(state.sessions).filter(
+          ([, session]) => session.expiresAt > now,
+        ),
+      );
+      const next = { ...state, sessions };
+      if (Object.keys(sessions).length !== Object.keys(state.sessions).length)
+        await this.persist(next);
+      this.state = next;
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
       if (requireExisting) throw new Error("账号状态缺失，拒绝启动已有世界");
