@@ -2,6 +2,12 @@
 
 状态：记录至 2026-09-25 的实际部署；变更后须同步复核。上线地址为 <https://planet.bibo.bot>，源码为 <https://github.com/Peiiii/bibo-planet>。本手册只存放路径、流程和检查项，不存放任何密钥值或私人对话内容。
 
+## 当前前端上线锚点（2026-09-25 01:55 北京时间）
+
+GitHub `master` 的前端修复来源为 `12a6267`；Cloudflare Worker 版本 `df31f70d-3ac2-4213-9d9f-d25337156a7f`，静态资产 `index-CElEQR1f.js` / `index-BUw-pkRK.css`。此批只更新 Cloudflare Worker 与静态资源，ECS Bibo 后端继续运行下方 `c0d7b1d`，没有重启 Bibo、备份 timer 或同机旧站；Worker 原有边缘 secret 保留。发布前 44/44 测试、TypeScript、定向 ESLint、Prettier、Vite 构建与 Wrangler dry-run 通过，部署前回退版本记录为 `0a3e79e2-63db-4251-a148-ade7683c60bc`。
+
+新访客若 `/api/world` 一直悬挂，首屏 AI 列表约 20 秒后停止无限加载，在卡片位置显示「重试」；写操作、模型生成和额度均未改。公网全新 Chrome 的 390×844 移动视口人为悬挂这条只读请求，约 21.6 秒后看到 `role=alert` 与可操作的重试，无卡片时 `innerWidth=scrollWidth=390`；放开请求再点重试，约 1 秒出现三张卡片且错误消失。正常公网首页、世界/会话 API 和同机旧站均为 200，无边缘密钥直访源站仍为 403。此故障演练不是真实边缘或源站故障，也不替代登录后 Agent、对抗输入、自然备份和正式运营验收。
+
 ## 当前上线锚点（2026-09-25 00:07 北京时间）
 
 Bibo ECS 运行代码为 `c0d7b1d9cdd48e21bef3b03a154181f11c9ae32d`；GitHub `master` 后续还有不改变运行代码的验收文档提交，前端/Cloudflare Worker 未改。NextClaw Agent SDK 固定快照来自独立源码分支提交 `651fe5b259178abb47d8c394b7b3840978c21e71`，不是 `pnpm link`，也未发布 NextClaw 全量 NPM 批次。服务器快进前工作区干净，更新后按锁文件安装、实际导入 Harness 和 TypeScript 检查均通过；三只 Agent 以服务身份在隔离目录启动/清理成功。只更新并重启 Bibo 的 systemd 单元，`RuntimeDirectory=/run/bibo-planet-agent` 实际为 `bibo-planet:bibo-planet 0700`；Bibo、备份 timer active，`NRestarts=0`，同机 `nextclaw.net` 首页 200。
