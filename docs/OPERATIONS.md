@@ -9,7 +9,7 @@
 - 阿里云杭州 ECS `i-bp11euxyc7o1ned0k8yd` 上的 Bibo 服务独立运行：源码 `/opt/bibo-planet`，Node `/opt/bibo-node/bin/node`，systemd 单元 `bibo-planet`，只监听 `127.0.0.1:3039`，运行身份 `bibo-planet`。Nginx 的 `nextclaw-net.conf` 包含独立片段 `/etc/nginx/bibo-location.conf`，旧站主页不应受影响。
 - 用户数据在 `/var/lib/bibo-planet`，其中 `accounts.json` 含密码哈希和会话哈希，`spirits/*/state.json` 含所有旅人的原始对话及共同遭遇，均属敏感数据。服务端凭据在 root-only `/etc/bibo-planet/env`。不要把数据、环境文件、Cloud Assistant 输出或备份上传到仓库。
 - 生产 unit 设置 `NODE_ENV=production`。自 `bef2fd8` 起，启动时若账号或任意一只精灵的状态文件缺失，进程会拒绝监听，不能靠自动新建空数据来“恢复”；先核对数据路径与挂载，按下方备份流程恢复，不能删除其余文件后重启。首次本地开发世界仍可显式初始化，生产不以此方式引导新世界。
-- 生产模型为 DeepSeek 正式 API，通过 NextClaw Harness 的无宿主工具模型能力调用。当前公开版不具备自写代码、文件/命令/网络工具或 mini-app 沙箱；不能在产品文案中宣称这些已交付。
+- 生产模型当前配置为 DeepSeek 正式 API 的 `deepseek/deepseek-flash`，通过 NextClaw Harness 的无宿主工具模型能力调用。Flash 的特定备案号尚未核实，不能沿用旧 Chat 模型号。当前公开版不具备自写代码、文件/命令/网络工具或 mini-app 沙箱；不能在产品文案中宣称这些已交付。
 
 ## 日常健康检查
 
@@ -49,6 +49,8 @@
 当前发布锚点（2026-09-24 14:40，北京时间）：ECS 后端 Git `bef2fd8`；前端/Worker 沿用 Git `b095bc9` 与 Worker 版本 `ae16925e-777c-4b66-b126-898179acb279`，本次未改动或重部署前端。更新前核对四份生产状态文件非空、systemd `NODE_ENV=production`、Bibo/备份 timer active 且代码区干净；仅对 Bibo 执行备份服务并确认 success，私有 OSS 列表中确认加密对象 `daily-2026-09-24-143853.gKch4XDF.tar.gz.gpg`。该新对象只证实上传存在，尚未取回解密；较早 `13:57` 对象的隔离恢复证据见上文。远端 TypeScript 检查通过后只重启 Bibo；公网三只精灵的能量/相遇数未回退，首页/世界 API 与原站均 200，无密钥的源站 Bibo 路径为 403。公网新旅人实际完成注册、会话读取与塞拉真实模型一轮对话，本人历史 2 条、塞拉相遇 `3→4`。生产缺失数据路径在隔离空目录验证为启动失败且不新建空状态，尚未在生产故意移除状态文件或执行原位恢复。首次自然定时备份及 AC-10/AC-11 仍未完成。
 
 当前前端发布锚点（2026-09-24 15:13，北京时间）：ECS 后端仍为 `bef2fd8`，前端/Worker 源码 Git `53fc153`，Cloudflare Worker 版本 `510cf954-4f8f-4dad-b4d2-34146f184d8a`，静态资产 `index-CABBpF2h.js` / `index-BZ1BJUsa.css`。只发布 Cloudflare，没有重启 Bibo 或同机旧站；公网匿名桌面和 320px 手机真实 Chrome 确认共享记忆的直白告知及注册弹窗可读、无横向溢出。公网首页、世界 API、会话 API、原 `nextclaw.net` 首页均 200，无密钥源站路径 403。用户对话的原文可能经精灵共享记忆间接影响他人的回答，这条界面提示不等于完整隐私协议或保密保证；AC-10/AC-11 与自然备份触发仍待闭合。
+
+当前模型迁移发布锚点（2026-09-24 15:34，北京时间）：ECS 后端与 Cloudflare 前端/Worker 源码 Git 均为 `24e74dc`，Worker 版本 `f478fe10-3340-4975-9626-62711c10a0d1`，静态 JS `index-AE5DR_XF.js`。更新前对 Bibo 专用备份服务执行 success，私有 OSS 独立列出新加密对象 `daily-2026-09-24-152812.QlCNZtPA.tar.gz.gpg`；此新对象尚未取回解密，较早备份的隔离恢复证据见上文。ECS 代码区干净并快进到该 SHA，TypeScript 检查通过；只将 `/etc/bibo-planet/env` 中 Bibo 的 `BIBO_MODEL` 从 `deepseek/deepseek-chat` 改为 `deepseek/deepseek-flash`，文件仍为 root:root、600，只重启 `bibo-planet`。服务与备份 timer active。目标 ECS 在独立临时目录以相同供应商凭据真实调用 Flash 成功，临时目录已清理；发布后公网 `/api/world` 显示 DeepSeek Flash、无未经核实的备案号。两名新旅人经公网 API 完成 A 连续两轮、B 跨旅人线索一轮，私人历史分别 4/2 条，墨里相遇 `14→17`、额度按成功回复扣减。公网首页与世界/会话 API、原站均 200，无边缘密钥源站路径 403；静态资源包含「模型资料」链接文案。本次浏览器控制连接超时，**尚无新发布版本的浏览器操作证据**，需补验；不能把 API 成功冒充 UI 完成。AC-06 首次自然 timer、AC-10/AC-11 及最终 AC-08 仍未闭合。
 
 ## 故障分层
 
