@@ -343,6 +343,9 @@ a {
   line-height: 1.4;
   margin-top: 3px;
 }
+.activity-compact {
+  display: none;
+}
 .spirit-activity:before {
   content: "";
   display: inline-block;
@@ -863,7 +866,7 @@ a {
     padding: 42px 20px 28px;
   }
   .world-copy h1 {
-    font-size: 43px;
+    font-size: clamp(34px, 11vw, 43px);
   }
   .intro {
     font-size: 12px;
@@ -911,6 +914,12 @@ a {
   .spirit-label small {
     display: none;
   }
+  .activity-full {
+    display: none;
+  }
+  .activity-compact {
+    display: block;
+  }
   .world-footnote {
     margin-top: 12px;
   }
@@ -943,5 +952,10 @@ a {
   .footer {
     padding: 0 20px;
     font-size: 8px;
+  }
+}
+@media (max-width: 360px) {
+  .footer span:last-child {
+    display: none;
   }
 }

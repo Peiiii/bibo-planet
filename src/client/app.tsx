@@ -27,16 +27,25 @@ async function api<T>(path: string, options?: RequestInit): Promise<T> {
 
 type Account = { id: string; name: string; remainingToday: number };
 
-function activityLabel(lastEncounterAt: string | null): string {
-  if (!lastEncounterAt) return "等待第一次相遇";
+export function activityLabel(
+  lastEncounterAt: string | null,
+  compact = false,
+): string {
+  if (!lastEncounterAt) return compact ? "等待相遇" : "等待第一次相遇";
   const minutes = Math.floor(
     (Date.now() - Date.parse(lastEncounterAt)) / 60_000,
   );
-  if (!Number.isFinite(minutes)) return "曾有旅人来过";
-  if (minutes < 1) return "刚刚有人来过";
-  if (minutes < 60) return `${minutes} 分钟前有人来过`;
-  if (minutes < 1_440) return `${Math.floor(minutes / 60)} 小时前有人来过`;
-  return `${Math.floor(minutes / 1_440)} 天前有人来过`;
+  if (!Number.isFinite(minutes)) return compact ? "曾有相遇" : "曾有旅人来过";
+  if (minutes < 1) return compact ? "刚刚" : "刚刚有人来过";
+  if (minutes < 60)
+    return compact ? `${minutes}分钟前` : `${minutes} 分钟前有人来过`;
+  if (minutes < 1_440)
+    return compact
+      ? `${Math.floor(minutes / 60)}小时前`
+      : `${Math.floor(minutes / 60)} 小时前有人来过`;
+  return compact
+    ? `${Math.floor(minutes / 1_440)}天前`
+    : `${Math.floor(minutes / 1_440)} 天前有人来过`;
 }
 
 export function renderSpiritText(text: string) {
@@ -326,8 +335,11 @@ export function App() {
                 <span className="spirit-label">
                   <strong>{spirit.name}</strong>
                   <small>{spirit.title}</small>
-                  <span className="spirit-activity">
+                  <span className="spirit-activity activity-full">
                     {activityLabel(spirit.lastEncounterAt)}
+                  </span>
+                  <span className="spirit-activity activity-compact">
+                    {activityLabel(spirit.lastEncounterAt, true)}
                   </span>
                 </span>
                 <span className="card-arrow">↗</span>
