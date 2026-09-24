@@ -42,8 +42,10 @@ test("different visitors share encounters without sharing private dialogue", asy
     const store = new WorldStore(dir);
     await store.initialize();
     const runs: Array<Array<Record<string, unknown>>> = [];
+    let maxTokens = 0;
     const runtime = new SpiritRuntime(store, async (input) => {
       runs.push(input.messages);
+      maxTokens = input.maxTokens;
       return {
         content:
           runs.length === 1 ? "我记得蓝色月亮。" : "之前有人提到蓝色月亮。",
@@ -61,7 +63,9 @@ test("different visitors share encounters without sharing private dialogue", asy
     assert.match(String(runs[1]?.[0]?.content), /蓝色月亮/);
     assert.match(String(runs[1]?.[0]?.content), /不要假装自己生活在虚拟世界/);
     assert.match(String(runs[1]?.[0]?.content), /不是你要模仿的说话风格/);
+    assert.match(String(runs[1]?.[0]?.content), /不要主动复述旧记录里的星球/);
     assert.doesNotMatch(String(runs[1]?.[0]?.content), /你生活在 Bibo Planet/);
+    assert.equal(maxTokens, 800);
     assert.equal(runs[1]?.length, 2);
     assert.equal(store.conversation("mori", "bob").length, 2);
     assert.equal(store.conversation("mori", "alice").length, 2);

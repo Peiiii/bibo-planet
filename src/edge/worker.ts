@@ -5,7 +5,7 @@ export default {
     if (request.method !== "GET" && request.method !== "POST")
       return Response.json({ error: "不支持此操作" }, { status: 405 });
     if (!env.BIBO_EDGE_SECRET)
-      return Response.json({ error: "星球暂时无法连接" }, { status: 503 });
+      return Response.json({ error: "服务暂时无法连接" }, { status: 503 });
     const target = new URL(
       `/__bibo${url.pathname}${url.search}`,
       env.BIBO_ORIGIN,
@@ -32,7 +32,7 @@ export default {
       return response;
     } catch {
       return Response.json(
-        { error: "星球暂时无法连接，请稍后重试" },
+        { error: "服务暂时无法连接，请稍后重试" },
         { status: 502 },
       );
     }
