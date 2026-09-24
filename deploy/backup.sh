@@ -14,7 +14,10 @@ recipient=5F8E8F0ACD781073015DA60736B6237F21ECE2A9
 
 install -d -m 700 "$backup_dir"
 exec 9>/run/lock/bibo-planet-backup.lock
-flock -n 9 || exit 0
+if ! flock -n 9; then
+  echo "Another Bibo backup is already running" >&2
+  exit 1
+fi
 
 if [[ "$(systemctl is-active bibo-planet)" != active ]]; then
   echo "Bibo is not active; refusing to back up an unknown state" >&2
@@ -42,8 +45,8 @@ cleanup() {
 }
 trap cleanup EXIT
 
-systemctl stop bibo-planet
 stopped=true
+systemctl stop bibo-planet
 tar -C "$data_dir" -czf "$archive" accounts.json spirits
 systemctl start bibo-planet
 stopped=false
