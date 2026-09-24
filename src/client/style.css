@@ -216,6 +216,34 @@ a {
   gap: 12px;
   margin-top: auto;
 }
+.world-load-error {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 16px;
+  border: 1px solid #f2c3b955;
+  border-radius: 12px;
+  color: #f2c3b9;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.world-load-error button {
+  flex: none;
+  min-height: 44px;
+  padding: 0 10px;
+  border: 1px solid currentColor;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.world-load-error button:focus-visible {
+  outline: 2px solid #f2c3b9;
+  outline-offset: 3px;
+}
 .spirit-card {
   text-align: left;
   min-height: 146px;

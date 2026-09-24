@@ -169,6 +169,7 @@ export function App() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState("");
   const [loading, setLoading] = useState(true);
+  const [worldRetry, setWorldRetry] = useState(0);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [worldError, setWorldError] = useState("");
@@ -243,10 +244,14 @@ export function App() {
   useEffect(() => {
     let active = true;
     let refreshing = false;
+    let pending: AbortController | null = null;
     function refresh(first = false) {
       if (!active || refreshing || (!first && document.hidden)) return;
       refreshing = true;
-      void api<WorldView>("/api/world")
+      const controller = new AbortController();
+      pending = controller;
+      const timeout = window.setTimeout(() => controller.abort(), 20_000);
+      void api<WorldView>("/api/world", { signal: controller.signal })
         .then((world) => {
           if (active) {
             setSpirits(world.spirits);
@@ -254,13 +259,12 @@ export function App() {
             setWorldError("");
           }
         })
-        .catch((cause: unknown) => {
-          if (active && first)
-            setWorldError(
-              cause instanceof Error ? cause.message : "暂时无法连接服务",
-            );
+        .catch(() => {
+          if (active && first) setWorldError("AI 列表暂时无法加载，请重试。");
         })
         .finally(() => {
+          window.clearTimeout(timeout);
+          if (pending === controller) pending = null;
           refreshing = false;
           if (active && first) setLoading(false);
         });
@@ -271,10 +275,11 @@ export function App() {
     document.addEventListener("visibilitychange", onVisible);
     return () => {
       active = false;
+      pending?.abort();
       window.clearInterval(interval);
       document.removeEventListener("visibilitychange", onVisible);
     };
-  }, []);
+  }, [worldRetry]);
 
   useEffect(() => {
     void api<{ account: Account | null }>("/api/session")
@@ -592,6 +597,21 @@ export function App() {
 
           <div className="spirit-list" aria-label="选择 AI">
             {loading && <p className="muted">正在加载 AI…</p>}
+            {worldError && (
+              <div className="world-load-error" role="alert">
+                <span>{worldError}</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setWorldError("");
+                    setLoading(true);
+                    setWorldRetry((current) => current + 1);
+                  }}
+                >
+                  重试
+                </button>
+              </div>
+            )}
             {spirits.map((spirit, index) => (
               <button
                 type="button"
@@ -744,9 +764,9 @@ export function App() {
                 失败尝试也占用资源预算
               </p>
             )}
-            {(error || worldError) && (
+            {error && (
               <p className="error-note" role="alert">
-                {error || worldError}
+                {error}
               </p>
             )}
             {selected && selected.energy < MIN_WAKE_ENERGY && (
