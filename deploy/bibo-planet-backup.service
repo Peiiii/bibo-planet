@@ -1,0 +1,10 @@
+[Unit]
+Description=Create a consistent encrypted Bibo Planet backup
+Wants=network-online.target
+After=network-online.target bibo-planet.service
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash /opt/bibo-planet/deploy/backup.sh
+UMask=0077
+

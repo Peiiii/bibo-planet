@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily consistent encrypted Bibo Planet backup
+
+[Timer]
+OnCalendar=*-*-* 04:15:00 Asia/Shanghai
+RandomizedDelaySec=5m
+Persistent=true
+Unit=bibo-planet-backup.service
+
+[Install]
+WantedBy=timers.target
