@@ -5,6 +5,7 @@
 ## 运行边界
 
 - Cloudflare Worker `bibo-planet` 提供静态站，将 `/api/*` 通过 HTTPS 转发至 `https://nextclaw.net/__bibo/api/*`。Worker secret `BIBO_EDGE_SECRET` 与服务端 `/etc/bibo-planet/env` 中同名值一致；前端和 Git 都不能得到该值。
+- 静态响应头由构建进 `dist/` 的 `public/_headers` 管理，覆盖首屏与指纹化资源；API 响应由 Worker 代码生成，不受该文件覆盖。2026-09-24 已在公网确认 HTML 与 JS 均带防嵌入、`nosniff`、Referrer/Permissions Policy、有限 CSP 与 HSTS；改动该文件时须同时检查真实页面可加载和 API 会话链路。Cloudflare 官方合同：<https://developers.cloudflare.com/workers/static-assets/headers/>。
 - 阿里云杭州 ECS `i-bp11euxyc7o1ned0k8yd` 上的 Bibo 服务独立运行：源码 `/opt/bibo-planet`，Node `/opt/bibo-node/bin/node`，systemd 单元 `bibo-planet`，只监听 `127.0.0.1:3039`，运行身份 `bibo-planet`。Nginx 的 `nextclaw-net.conf` 包含独立片段 `/etc/nginx/bibo-location.conf`，旧站主页不应受影响。
 - 用户数据在 `/var/lib/bibo-planet`，其中 `accounts.json` 含密码哈希和会话哈希，`spirits/*/state.json` 含所有旅人的原始对话及共同遭遇，均属敏感数据。服务端凭据在 root-only `/etc/bibo-planet/env`。不要把数据、环境文件、Cloud Assistant 输出或备份上传到仓库。
 - 生产模型为 DeepSeek 正式 API，通过 NextClaw Harness 的无宿主工具模型能力调用。当前公开版不具备自写代码、文件/命令/网络工具或 mini-app 沙箱；不能在产品文案中宣称这些已交付。
@@ -36,7 +37,7 @@
 3. 若前端/Worker 发生变化，在本地用 Wrangler 发布同一 Git SHA 的 Cloudflare Worker。Worker secret 应保留；不可把它写进 `wrangler.jsonc`。发布后重新检查首页、账号、连续两轮真实对话、跨账号隔离与原站可用性。
 4. 回滚应用代码时只对 `/opt/bibo-planet` 使用已知可工作的 SHA，并保留数据目录；只有数据结构不兼容且已评估用户新增数据损失时才按上一节恢复数据。Cloudflare Worker 可回退至已知版本；每次回退后必须从公网重验完整链路。
 
-当前发布锚点（2026-09-24 11:29 北京时间）：ECS Git `2e4ee55`，Cloudflare Worker `10443d43-9f78-4911-a290-01ce4491b925`。公网世界接口含最近相遇时间；服务端现在会根据明确线索从已保存的更早共同遭遇中找回少量片段，不增加模型调用或新持久状态。已登录账号在发布后收到真实模型回复，私人会话隔离正常；跨 10 次遭遇的语义由隔离世界中的真实模型试验证明。浏览器视觉和操作验收仍未完成，不能仅凭本节称为获客成品。
+当前发布锚点（2026-09-24 11:36 北京时间）：ECS 应用 Git `2e4ee55`，Cloudflare Worker `9857e1a8-ac45-46c3-94a4-7a28cb11995c`。公网世界接口含最近相遇时间；服务端现在会根据明确线索从已保存的更早共同遭遇中找回少量片段，不增加模型调用或新持久状态。已登录账号在发布后收到真实模型回复，私人会话隔离正常；跨 10 次遭遇的语义由隔离世界中的真实模型试验证明。静态安全响应头已在公网确认。浏览器视觉和操作验收仍未完成，不能仅凭本节称为获客成品。
 
 ## 故障分层
 
