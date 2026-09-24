@@ -1,0 +1,28 @@
+[Unit]
+Description=Bibo Planet shared AI world
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=bibo-planet
+Group=bibo-planet
+WorkingDirectory=/opt/bibo-planet
+Environment=NODE_ENV=production
+EnvironmentFile=/etc/bibo-planet/env
+ExecStart=/opt/bibo-node/bin/node --import tsx src/server/main.ts
+Restart=always
+RestartSec=3
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+ReadWritePaths=/var/lib/bibo-planet
+CapabilityBoundingSet=
+MemoryMax=900M
+
+[Install]
+WantedBy=multi-user.target
