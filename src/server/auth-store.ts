@@ -50,7 +50,7 @@ export class AuthStore {
 
   constructor(private readonly dataDir: string) {}
 
-  async initialize(): Promise<void> {
+  async initialize(requireExisting = false): Promise<void> {
     await mkdir(this.dataDir, { recursive: true });
     try {
       const state = JSON.parse(await readFile(this.path, "utf8")) as AuthState;
@@ -63,6 +63,7 @@ export class AuthStore {
       this.state = state;
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+      if (requireExisting) throw new Error("账号状态缺失，拒绝启动已有世界");
       await this.persist(this.state);
     }
   }

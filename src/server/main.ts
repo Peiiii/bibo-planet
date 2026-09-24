@@ -8,10 +8,11 @@ import { WorldStore } from "./world-store.ts";
 const dataDir = resolve(
   process.env.BIBO_DATA_DIR ?? resolve(process.cwd(), ".data"),
 );
+const requireExisting = process.env.NODE_ENV === "production";
 const store = new WorldStore(dataDir);
-await store.initialize();
+await store.initialize(requireExisting);
 const auth = new AuthStore(dataDir);
-await auth.initialize();
+await auth.initialize(requireExisting);
 const runtime = new SpiritRuntime(store);
 await runtime.start();
 

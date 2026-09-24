@@ -12,7 +12,7 @@ if (!spirit || !Number.isSafeInteger(amount) || amount < 1) {
   process.exitCode = 1;
 } else {
   const store = new WorldStore(resolve(process.cwd(), ".data"));
-  await store.initialize();
+  await store.initialize(true);
   const energy = await store.credit(spirit.id, amount);
   console.log(`${spirit.name} 当前能量：${energy}`);
 }

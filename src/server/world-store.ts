@@ -42,29 +42,44 @@ export class WorldStore {
 
   constructor(readonly dataDir: string) {}
 
-  async initialize(): Promise<void> {
-    for (const spirit of SPIRITS) {
-      const path = this.statePath(spirit.id);
+  async initialize(requireExisting = false): Promise<void> {
+    const saved = await Promise.all(
+      SPIRITS.map(async (spirit): Promise<SpiritState | null> => {
+        try {
+          return JSON.parse(
+            await readFile(this.statePath(spirit.id), "utf8"),
+          ) as SpiritState;
+        } catch (error) {
+          if ((error as NodeJS.ErrnoException).code === "ENOENT") return null;
+          throw error;
+        }
+      }),
+    );
+    if (
+      saved.some((state) => state === null) &&
+      (requireExisting || saved.some((state) => state !== null))
+    )
+      throw new Error("精灵状态缺失，拒绝自动重建已有世界");
+
+    for (const [index, spirit] of SPIRITS.entries()) {
+      const state = saved[index];
+      if (state) {
+        if (state.version !== 1 || !Number.isSafeInteger(state.energy))
+          throw new Error(`无效的精灵状态：${spirit.id}`);
+        this.states.set(spirit.id, state);
+        continue;
+      }
       await mkdir(join(this.dataDir, "spirits", spirit.id), {
         recursive: true,
       });
-      try {
-        const state = JSON.parse(await readFile(path, "utf8")) as SpiritState;
-        if (state.version !== 1 || !Number.isSafeInteger(state.energy)) {
-          throw new Error(`无效的精灵状态：${spirit.id}`);
-        }
-        this.states.set(spirit.id, state);
-      } catch (error) {
-        if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
-        const state: SpiritState = {
-          version: 1,
-          energy: INITIAL_ENERGY,
-          encounters: [],
-          conversations: {},
-        };
-        this.states.set(spirit.id, state);
-        await this.persist(spirit.id, state);
-      }
+      const initial: SpiritState = {
+        version: 1,
+        energy: INITIAL_ENERGY,
+        encounters: [],
+        conversations: {},
+      };
+      await this.persist(spirit.id, initial);
+      this.states.set(spirit.id, initial);
     }
   }
 

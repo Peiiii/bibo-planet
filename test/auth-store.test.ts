@@ -55,3 +55,14 @@ test("several travelers behind one address can register", async () => {
     await rm(dir, { recursive: true, force: true });
   }
 });
+
+test("production account initialization refuses a missing data file", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "bibo-auth-required-test-"));
+  try {
+    await assert.rejects(new AuthStore(dir).initialize(true), /账号状态缺失/);
+    await new AuthStore(dir).initialize();
+    await new AuthStore(dir).initialize(true);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});

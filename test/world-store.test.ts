@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, readFile, rm, unlink } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
@@ -137,6 +137,21 @@ test("same-spirit turns run serially", async () => {
     });
     await Promise.all([first, second]);
     assert.deepEqual(order, ["first-start", "first-end", "second"]);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("existing worlds never silently recreate missing spirit state", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "bibo-world-required-test-"));
+  try {
+    await assert.rejects(new WorldStore(dir).initialize(true), /精灵状态缺失/);
+    await new WorldStore(dir).initialize();
+    await new WorldStore(dir).initialize(true);
+    const missingPath = join(dir, "spirits", "piko", "state.json");
+    await unlink(missingPath);
+    await assert.rejects(new WorldStore(dir).initialize(), /精灵状态缺失/);
+    await assert.rejects(readFile(missingPath), { code: "ENOENT" });
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
