@@ -13,6 +13,8 @@ import {
 test("conversation identifies the spirit as AI before a visitor sends a message", () => {
   const html = renderToStaticMarkup(createElement(App));
   assert.match(html, /AI 精灵 · 回复由模型生成/);
+  assert.match(html, /发送成功的内容会成为精灵的共同记忆/);
+  assert.match(html, /其他旅人可能从它的回应中得知/);
 });
 
 test("spirit emphasis renders without exposing raw markup or HTML", () => {

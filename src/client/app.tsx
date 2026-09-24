@@ -29,6 +29,9 @@ async function api<T>(path: string, options?: RequestInit): Promise<T> {
 
 type Account = { id: string; name: string; remainingToday: number };
 
+const sharedMemoryNotice =
+  "发送成功的内容会成为精灵的共同记忆；其他旅人可能从它的回应中得知。请勿输入隐私或秘密。";
+
 export function activityLabel(
   lastEncounterAt: string | null,
   compact = false,
@@ -415,9 +418,7 @@ export function App() {
             <p className="intro">
               你来到一颗很小的星球。它们在这里生活，记得来过的人，也可能被你改变。你可以与任何一只说话，但没有谁能预先拥有它。
             </p>
-            <p className="shared-notice">
-              请别留下秘密。精灵会把相遇带入与其他旅人的对话。
-            </p>
+            <p className="shared-notice">{sharedMemoryNotice}</p>
           </div>
 
           <div className="planet-stage" aria-hidden="true">
@@ -755,9 +756,7 @@ export function App() {
             >
               {authMode === "register" ? "已经来过？登录" : "第一次来？注册"}
             </button>
-            <p className="auth-disclaimer">
-              请勿输入个人隐私或秘密。精灵的经历可能影响它与其他人的对话。
-            </p>
+            <p className="auth-disclaimer">{sharedMemoryNotice}</p>
           </section>
         </div>
       )}
