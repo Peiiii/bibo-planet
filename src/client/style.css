@@ -1048,6 +1048,68 @@ a {
     font-size: 8px;
   }
 }
+@media (max-width: 750px) and (max-height: 760px) {
+  .planet-stage {
+    height: 205px;
+  }
+  .planet {
+    top: 21px;
+    width: 150px;
+    height: 150px;
+  }
+  .planet-glow {
+    width: 210px;
+    height: 185px;
+  }
+  .orbit {
+    top: 95px;
+  }
+  .orbit-one {
+    width: 295px;
+    height: 100px;
+  }
+  .orbit-two {
+    width: 340px;
+    height: 120px;
+  }
+}
+@media (max-width: 750px) and (max-height: 680px) {
+  .world-panel {
+    padding-top: 28px;
+  }
+  .world-copy .eyebrow {
+    margin-bottom: 14px;
+  }
+  .intro {
+    margin-top: 12px;
+  }
+  .shared-notice {
+    margin-top: 10px;
+  }
+  .planet-stage {
+    height: 190px;
+  }
+  .planet {
+    top: 18px;
+    width: 142px;
+    height: 142px;
+  }
+  .planet-glow {
+    width: 195px;
+    height: 175px;
+  }
+  .orbit {
+    top: 88px;
+  }
+  .orbit-one {
+    width: 280px;
+    height: 95px;
+  }
+  .orbit-two {
+    width: 325px;
+    height: 115px;
+  }
+}
 @media (max-width: 360px) {
   .footer span:last-child {
     display: none;
