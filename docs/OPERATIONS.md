@@ -15,7 +15,7 @@
 
 1. 从外网确认 `https://planet.bibo.bot/`、`/api/world`、`/api/session` 返回 200。匿名访问 `/api/spirits/mori/conversation` 应为 401；直接访问 `https://nextclaw.net/__bibo/api/world` 而不带内部密钥应为 403。
 2. 在 ECS 确认 `systemctl is-active bibo-planet` 为 `active`，`nginx -t` 通过，`nextclaw.net` 原站首页仍为 200。只看 `journalctl -u bibo-planet` 的错误类型和状态；不回显请求正文或环境变量。
-3. 确认 `/var/lib/bibo-planet` 有足够磁盘空间、服务内存未接近 `MemoryMax=900M`；观察模型 401/402/429/超时与世界每日额度。首页 200 不能证明推理服务可用，必要时以受控测试账号发一条真实消息。
+3. 确认 `/var/lib/bibo-planet` 有足够磁盘空间、服务内存未接近 `MemoryMax=900M`；观察模型 401/402/429/超时、每日尝试额度与供应商余额/账单。每账号每天最多 18 次模型尝试与 12 次成功唤醒，全星球最多 240 次模型尝试；调用前预留并持久化，失败也占尝试预算。该上限只约束当前**单实例**发起调用的次数，不是金额上限；内部重试、模型价格变化和未来多实例部署需要单独监控或改造。首页 200 不能证明推理服务可用，必要时以受控测试账号发一条真实消息。
 
 ## 备份与恢复
 
@@ -51,6 +51,8 @@
 当前前端发布锚点（2026-09-24 15:13，北京时间）：ECS 后端仍为 `bef2fd8`，前端/Worker 源码 Git `53fc153`，Cloudflare Worker 版本 `510cf954-4f8f-4dad-b4d2-34146f184d8a`，静态资产 `index-CABBpF2h.js` / `index-BZ1BJUsa.css`。只发布 Cloudflare，没有重启 Bibo 或同机旧站；公网匿名桌面和 320px 手机真实 Chrome 确认共享记忆的直白告知及注册弹窗可读、无横向溢出。公网首页、世界 API、会话 API、原 `nextclaw.net` 首页均 200，无密钥源站路径 403。用户对话的原文可能经精灵共享记忆间接影响他人的回答，这条界面提示不等于完整隐私协议或保密保证；AC-10/AC-11 与自然备份触发仍待闭合。
 
 当前模型迁移发布锚点（2026-09-24 15:34，北京时间）：ECS 后端与 Cloudflare 前端/Worker 源码 Git 均为 `24e74dc`，Worker 版本 `f478fe10-3340-4975-9626-62711c10a0d1`，静态 JS `index-AE5DR_XF.js`。更新前对 Bibo 专用备份服务执行 success，私有 OSS 独立列出新加密对象 `daily-2026-09-24-152812.QlCNZtPA.tar.gz.gpg`；此新对象尚未取回解密，较早备份的隔离恢复证据见上文。ECS 代码区干净并快进到该 SHA，TypeScript 检查通过；只将 `/etc/bibo-planet/env` 中 Bibo 的 `BIBO_MODEL` 从 `deepseek/deepseek-chat` 改为 `deepseek/deepseek-flash`，文件仍为 root:root、600，只重启 `bibo-planet`。服务与备份 timer active。目标 ECS 在独立临时目录以相同供应商凭据真实调用 Flash 成功，临时目录已清理；发布后公网 `/api/world` 显示 DeepSeek Flash、无未经核实的备案号。两名新旅人经公网 API 完成 A 连续两轮、B 跨旅人线索一轮，私人历史分别 4/2 条，墨里相遇 `14→17`、额度按成功回复扣减。公网首页与世界/会话 API、原站均 200，无边缘密钥源站路径 403；静态资源包含「模型资料」链接文案。本次浏览器控制连接超时，**尚无新发布版本的浏览器操作证据**，需补验；不能把 API 成功冒充 UI 完成。AC-06 首次自然 timer、AC-10/AC-11 及最终 AC-08 仍未闭合。
+
+当前尝试预算发布锚点（2026-09-24 15:50，北京时间）：ECS 后端和 Cloudflare 前端/Worker 源均为 Git `f402a00`，Worker 版本 `6e704e07-d179-4133-820c-15eda0dedf4d`，静态 JS `index-msSQyIEg.js`。部署前同一 Bibo 专用备份服务 success，私有 OSS 独立列出加密对象 `daily-2026-09-24-154626.orIJXJ7s.tar.gz.gpg`；该新对象尚未独立取回解密。远端代码快进后 TypeScript 检查和既有 `AuthStore` 只读加载通过，生产 11 条未带尝试字段的账号行按旧成功次数兼容；只重启 Bibo，服务与备份 timer active。公网新旅人实际获得皮可 Flash 回复，个人档案尝试/成功各 1，私人会话 2 条、皮可相遇 `7→8`；相同请求编号重放只返回持久化结果，尝试/成功/相遇均不再增加。首页、世界/会话 API、原站复查为 200，无边缘密钥源站路径 403；本机公网 CLI 偶有 SSL/HTTP2 传输错误，重试后成功，尚未定位来源。浏览器控制本轮仍超时，当前版本页面实际交互、手机文案换行未复验，不得称为完成。AC-06、AC-10、AC-11 和最终 AC-08 仍未闭合。
 
 ## 故障分层
 

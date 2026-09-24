@@ -2,7 +2,7 @@
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-状态（2026-09-24）：本机实现已完成，24/24 测试、TypeScript、lint、格式、构建和 Worker dry-run 通过；尚未部署到公网，生产备份与真实链路复验待做。本文仅记录这次实现范围，正式交付状态以[公网验收记录](2026-09-24-public-launch.plan.md)为准。
+状态（2026-09-24 15:50，北京时间）：Git `f402a00` 已推送并部署，Cloudflare Worker `6e704e07-d179-4133-820c-15eda0dedf4d` 同源发布。发布前 Bibo 专用备份 success、私有 OSS 确认新加密对象存在；远端旧账号读取兼容通过。公网真实模型一轮和同请求幂等重放证明尝试/成功各只计 1 次。本机 24/24 测试、TypeScript、lint、格式、构建和 Worker dry-run 通过；当前版本浏览器操作证据因工具连接超时仍待补验。本文仅记录这次实现范围，正式交付状态以[公网验收记录](2026-09-24-public-launch.plan.md)为准。
 
 **Goal:** 模型调用前持久预留次数，保证失败、超时和重启也不能绕过每日调用次数上限，同时保留成功回复的独立额度。
 
