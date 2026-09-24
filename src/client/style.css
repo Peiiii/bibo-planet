@@ -920,6 +920,9 @@ a {
   .activity-compact {
     display: block;
   }
+  .card-arrow {
+    display: none;
+  }
   .world-footnote {
     margin-top: 12px;
   }
