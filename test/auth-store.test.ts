@@ -6,6 +6,40 @@ import { join } from "node:path";
 import { test } from "node:test";
 import { AuthStore } from "../src/server/auth-store.ts";
 
+test("registration accepts eight Unicode characters without composition rules", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "bibo-password-boundary-test-"));
+  try {
+    const auth = new AuthStore(dir);
+    await auth.initialize();
+    await assert.rejects(
+      auth.register("七字符旅人", "abcdefg", "203.0.113.80"),
+      /8–128/,
+    );
+    await assert.rejects(
+      auth.register("表情旅人", "😀abcdef", "203.0.113.80"),
+      /8–128/,
+    );
+    const ascii = await auth.register("八字符旅人", "abcdefgh", "203.0.113.80");
+    const unicode = await auth.register(
+      "八码点旅人",
+      "😀abcdefg",
+      "203.0.113.80",
+    );
+    assert.equal(auth.account(ascii.token)?.name, "八字符旅人");
+    assert.equal(auth.account(unicode.token)?.name, "八码点旅人");
+    assert.equal(
+      (await auth.login("八字符旅人", "abcdefgh", "203.0.113.81")).account.id,
+      ascii.account.id,
+    );
+    const saved = JSON.parse(
+      await readFile(join(dir, "accounts.json"), "utf8"),
+    ) as { accounts: unknown[] };
+    assert.equal(saved.accounts.length, 2);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
 test("registration, login, quota and logout survive a store restart", async () => {
   const dir = await mkdtemp(join(tmpdir(), "bibo-auth-test-"));
   try {

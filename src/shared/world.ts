@@ -1,5 +1,6 @@
 export const INITIAL_ENERGY = 250_000;
 export const MIN_WAKE_ENERGY = 500;
+export const MIN_ACCOUNT_PASSWORD_LENGTH = 8;
 
 export const SPIRITS = [
   {

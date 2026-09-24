@@ -8,6 +8,7 @@ import {
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { promisify } from "node:util";
+import { MIN_ACCOUNT_PASSWORD_LENGTH } from "../shared/world.ts";
 
 const scrypt = promisify(scryptCallback);
 const SESSION_DAYS = 30;
@@ -98,8 +99,9 @@ export class AuthStore {
     const normalizedName = displayName.toLocaleLowerCase("zh-CN");
     if (!/^[\p{L}\p{N}_]{3,24}$/u.test(displayName))
       throw new AuthError(400, "昵称需要 3–24 个汉字、字母、数字或下划线");
-    if (password.length < 10 || password.length > 128)
-      throw new AuthError(400, "密码需要 10–128 个字符");
+    const passwordLength = Array.from(password).length;
+    if (passwordLength < MIN_ACCOUNT_PASSWORD_LENGTH || passwordLength > 128)
+      throw new AuthError(400, "密码需要 8–128 个字符");
     return await this.serial(async () => {
       const today = dayKey();
       const registrationCount = this.registrationsToday(today);

@@ -7,6 +7,7 @@ import {
 } from "react";
 import {
   INITIAL_ENERGY,
+  MIN_ACCOUNT_PASSWORD_LENGTH,
   MIN_WAKE_ENERGY,
   type ChatMessage,
   type ChatResponse,
@@ -368,8 +369,15 @@ export function App() {
 
   async function submitAuth(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setAuthBusy(true);
     setAuthError("");
+    if (
+      authMode === "register" &&
+      Array.from(authPassword).length < MIN_ACCOUNT_PASSWORD_LENGTH
+    ) {
+      setAuthError(`密码至少需要 ${MIN_ACCOUNT_PASSWORD_LENGTH} 个字符`);
+      return;
+    }
+    setAuthBusy(true);
     try {
       const result = await api<{ account: Account }>(`/api/${authMode}`, {
         method: "POST",
@@ -852,14 +860,16 @@ export function App() {
                 value={authPassword}
                 onChange={(event) => setAuthPassword(event.target.value)}
                 required
-                minLength={authMode === "register" ? 10 : 1}
+                minLength={1}
                 placeholder={
-                  authMode === "register" ? "至少 10 个字符" : "输入密码"
+                  authMode === "register"
+                    ? `至少 ${MIN_ACCOUNT_PASSWORD_LENGTH} 个字符`
+                    : "输入密码"
                 }
               />
               {authMode === "register" && (
                 <p className="auth-password-note">
-                  目前无法找回密码，请妥善保存。
+                  建议使用更长的密码；目前无法找回，请妥善保存。
                 </p>
               )}
               {authError && (
