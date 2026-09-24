@@ -23,6 +23,8 @@
 
 已新增每日 `bibo-planet-backup.timer`，北京时间 04:15 左右调用 `deploy/backup.sh`：检查世界文件和 GPG 公钥 → 仅停 Bibo 服务以取得一致归档 → 立刻重启 Bibo → 公钥加密 → 通过 `BiboPlanetBackupRole` 将加密文件上传 `oss://bibo-planet-backups-peiiii-2026/daily/`。RAM 角色只获准对这个前缀执行 `oss:PutObject`，没有 OSS 读取、列举或删除权，也没有长期 AccessKey；上传工具为 ECS 上校验官方 SHA-256 后安装的 `/opt/bibo-ossutil/bin/ossutil`。2026-09-24 10:57 手动启动**同一个 systemd 备份服务**成功，Bibo 自动恢复 active；新对象 `daily-2026-09-24-105745.eHMQDDOn.tar.gz.gpg` 已从 OSS 下载，SHA-256 `33f5cb84af8dc4e1d414545965a08dc360fe5dbf374c46704ec17deffcb96683` 与 ECS 一致，并可在本机流式解密读出 8 个归档条目。定时器已 enabled/active，下一次计划 2026-09-25 04:15 左右；**自然定时触发仍待明日观察**。
 
+2026-09-24 11:07 更新应用前再次手动运行同一备份 service，上传加密对象 `daily-2026-09-24-110754.nZkVicP6.tar.gz.gpg` 成功，服务器源文件 SHA-256 为 `9ce499fd6d5668734624fc7ceb00744b0c0c70860c91d71ac6aa3002e9980fc6`，Bibo 与定时器均恢复 active。第二个对象也已从 OSS 下载，SHA-256 与源文件一致，本机私钥流式解密后可列出 8 个归档条目；临时下载副本已删除。
+
 恢复时先停止**仅 Bibo** 的服务，保留故障时数据的另一个 root-only 快照，检查归档内容和目标路径，再恢复到 `/var/lib/bibo-planet`、校正 `bibo-planet` 所有权并启动服务。若用离机副本，先由持有上述私钥的本机下载、核对记录的 SHA-256 并解密到受控临时目录，再将解密后的档案通过可信通道恢复；不能把私钥复制到公网服务器。随后从公网检查账号会话、各精灵遭遇数、能量与私人历史。恢复会覆盖当前世界状态，不能在活跃用户仍在写入时盲目执行；如需回滚，只选择经过核对的精确归档，不删除其它备份。当前尚未进行生产原位覆盖恢复演练。
 
 ## 版本更新与回滚
@@ -31,6 +33,8 @@
 2. 先备份数据。在 ECS 确认 `/opt/bibo-planet` 工作区干净、当前 SHA 和服务健康；从已推送仓库快进到待发布 SHA。使用 `/opt/bibo-node/bin` 下的 pnpm 按锁文件安装依赖，然后只重启 `bibo-planet`，确认其日志和公网 API。不要重启 NextClaw 原服务。
 3. 若前端/Worker 发生变化，在本地用 Wrangler 发布同一 Git SHA 的 Cloudflare Worker。Worker secret 应保留；不可把它写进 `wrangler.jsonc`。发布后重新检查首页、账号、连续两轮真实对话、跨账号隔离与原站可用性。
 4. 回滚应用代码时只对 `/opt/bibo-planet` 使用已知可工作的 SHA，并保留数据目录；只有数据结构不兼容且已评估用户新增数据损失时才按上一节恢复数据。Cloudflare Worker 可回退至已知版本；每次回退后必须从公网重验完整链路。
+
+当前发布锚点（2026-09-24 11:11 北京时间）：ECS Git `55b3939`，Cloudflare Worker `10443d43-9f78-4911-a290-01ce4491b925`。公网世界接口新增只含最近相遇时间的字段，已登录账号在发布后收到真实模型回复；浏览器视觉和操作验收仍未完成，不能仅凭本节称为获客成品。
 
 ## 故障分层
 
