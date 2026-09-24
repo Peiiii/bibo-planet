@@ -1,0 +1,20 @@
+{
+  "Version": "1",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": "oss:ListObjects",
+      "Resource": "acs:oss:*:*:bibo-planet-backups-peiiii-2026",
+      "Condition": {
+        "StringLike": {
+          "oss:Prefix": ["deletions/", "deletions/*"]
+        }
+      }
+    },
+    {
+      "Effect": "Allow",
+      "Action": ["oss:GetObject", "oss:PutObject"],
+      "Resource": "acs:oss:*:*:bibo-planet-backups-peiiii-2026/deletions/*"
+    }
+  ]
+}

@@ -209,7 +209,11 @@ export class AuthStore {
     });
   }
 
-  async beginDeletion(token: string, password: string): Promise<string> {
+  async beginDeletion(
+    token: string,
+    password: string,
+    onFrozen?: (accountId: string) => void,
+  ): Promise<string> {
     const session = this.state.sessions[tokenHash(token)];
     const account = this.state.accounts.find(
       (item) => item.id === session?.accountId && !item.deleting,
@@ -238,7 +242,23 @@ export class AuthStore {
       const next = { ...this.state, accounts };
       await this.persist(next);
       this.state = next;
+      onFrozen?.(current.id);
       return current.id;
+    });
+  }
+
+  async markDeletingFromLedger(accountId: string): Promise<void> {
+    await this.serial(async () => {
+      const account = this.state.accounts.find((item) => item.id === accountId);
+      if (!account || account.deleting) return;
+      if (this.inFlight.has(accountId))
+        throw new AuthError(409, "账号仍有正在生成的消息");
+      const accounts = this.state.accounts.map((item) =>
+        item.id === accountId ? { ...item, deleting: true as const } : item,
+      );
+      const next = { ...this.state, accounts };
+      await this.persist(next);
+      this.state = next;
     });
   }
 

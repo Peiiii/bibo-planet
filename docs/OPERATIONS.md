@@ -27,6 +27,13 @@
 
 2026-09-24 12:53 使用有权读取桶配置的本机阿里云 CLI 查询 OSS `GetBucketLifecycle`，返回 `NoSuchLifecycle`；`daily/` 实际 4 个对象、15,495 字节。当前**没有**自动到期清理，ECS 上 `deploy/backup.sh` 成功上传后也会保留本地加密档案。删除策略和灾难恢复时防止已删除旅人数据回流须先设计、验证再配置；在此之前不要对访客承诺固定保留期或“删除后所有备份消失”。本次只读查询，没有改动桶和任何备份。
 
+### 账号删除记录的离机准备（2026-09-24 16:35，北京时间；尚未启用线上删除）
+
+- 新增独立 RAM 策略 `BiboPlanetDeletionLedger` 并附加到现有 ECS 角色 `BiboPlanetBackupRole`：只允许对私有桶的 `deletions/` 前缀列举、读取、写入；无删除权，原 `daily/` 仍只有备份上传权。已从 RAM API 回读实际策略版本 `v1` 与附加关系。以服务身份 `bibo-planet` 实试写入、读回并同步 `deletions/schema-v1.json` 成功；反向列举 `daily/` 返回 403。该标记只有格式号，不含账号或对话。策略文件为 [`deploy/deletion-ledger-ram-policy.json`](../deploy/deletion-ledger-ram-policy.json)，标记内容为 [`deploy/deletion-ledger-marker.json`](../deploy/deletion-ledger-marker.json)。[阿里云前缀授权说明](https://help.aliyun.com/en/oss/user-guide/access-control-base-on-ram-policy)与[OSS 成功写入后的强一致性说明](https://help.aliyun.com/en/oss/user-guide/what-is-oss)是权限及重放设计依据。
+- 原备份使用的 ossutil v1 保持不变。为删除记录的 `sync` 路径另在 `/opt/bibo-ossutil-v2/bin/ossutil` 安装官方 2.4.0 Linux amd64 包，下载包 SHA-256 与[阿里云公布值](https://help.aliyun.com/en/oss/developer-reference/ossutil-overview/) `85edf66b2fb7238f5c7e25cab820cf29312319fe4935b7c86a6b8485eb434f3c` 一致，安装脚本见 [`deploy/install-ossutil-v2.sh`](../deploy/install-ossutil-v2.sh)。旧 `/opt/bibo-ossutil` 曾为排查执行权限短暂开放目录遍历，发现 v2 有独立路径后已恢复 root-only `700`；原备份脚本仍用旧路径且未改。Bibo、备份 timer 和旧站均未因此重启。
+- `codex/account-deletion` 分支已实现后端重放与封闭测试，**仍未发布到 ECS/Worker**。将来发布前，生产环境还须配置独立于 `accounts.json`/`spirits` 归档的 `BIBO_DELETION_LEDGER_DIR`（建议 `/var/lib/bibo-planet-deletions`，仅 `bibo-planet` 可写）、`BIBO_OSSUTIL_PATH=/opt/bibo-ossutil-v2/bin/ossutil`、`BIBO_DELETION_OSS_PREFIX=oss://bibo-planet-backups-peiiii-2026/deletions`、`BIBO_DELETION_OSS_ENDPOINT=oss-cn-hangzhou-internal.aliyuncs.com`、`BIBO_DELETION_OSS_REGION=cn-hangzhou`。启动时必须从 OSS 同步完整墓碑并在开始监听前重放；同步或格式异常则拒绝启动。不能通过删去新配置来绕过此保护。
+- 公开删除接口另由 `BIBO_ACCOUNT_DELETION_ENABLED=true` 显式开启，并要求 `BIBO_BACKUP_RETENTION_DAYS`、`BIBO_PUBLIC_OPERATOR_NAME` 与 `BIBO_PRIVACY_CONTACT` 非空。**这些变量本身不证明**本地/OSS 生命周期已按相同期限真实配置，也不替代旧备份 + 最新墓碑的隔离恢复演练、用户页面与当前版本浏览器验收。在用户确认保留期和公开运营信息、实际生命周期与恢复验证完成前保持关闭；目前没有删除任何现有旅人数据或历史备份。
+
 2026-09-24 11:07 更新应用前再次手动运行同一备份 service，上传加密对象 `daily-2026-09-24-110754.nZkVicP6.tar.gz.gpg` 成功，服务器源文件 SHA-256 为 `9ce499fd6d5668734624fc7ceb00744b0c0c70860c91d71ac6aa3002e9980fc6`，Bibo 与定时器均恢复 active。第二个对象也已从 OSS 下载，SHA-256 与源文件一致，本机私钥流式解密后可列出 8 个归档条目；临时下载副本已删除。
 
 2026-09-24 11:28 后端再次更新前用同一服务创建加密对象 `daily-2026-09-24-112757.1IRHOL1L.tar.gz.gpg`，源文件 SHA-256 为 `8e2ab0aa93ebedeccc9c4a3033b598184cb83a64579b14b0a0ba1c935c2557ab`。该对象也已从私有 OSS 取回，哈希一致，私钥流式解密可列出 8 个归档条目；临时副本已删除。只观察到同一 service 手动实跑，仍未观察到 2026-09-25 首次自然定时触发。

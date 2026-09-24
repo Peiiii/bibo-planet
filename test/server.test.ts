@@ -5,9 +5,29 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
 import { createWorldServer } from "../src/server/server.ts";
+import { AccountDeletion } from "../src/server/account-deletion.ts";
 import { AuthStore } from "../src/server/auth-store.ts";
+import { DeletionLedger } from "../src/server/deletion-ledger.ts";
+import { FileDeletionRemote } from "../src/server/deletion-remotes.ts";
 import { SpiritRuntime } from "../src/server/spirit-runtime.ts";
 import { WorldStore } from "../src/server/world-store.ts";
+
+async function deletionFor(
+  dir: string,
+  auth: AuthStore,
+  store: WorldStore,
+): Promise<AccountDeletion> {
+  const deletion = new AccountDeletion(
+    auth,
+    store,
+    new DeletionLedger(
+      join(dir, "deletion-ledger"),
+      new FileDeletionRemote(join(dir, "deletion-offsite")),
+    ),
+  );
+  await deletion.initialize();
+  return deletion;
+}
 
 test("registered accounts isolate conversation lists, while both visitors can wake the same spirit", async () => {
   const dir = await mkdtemp(join(tmpdir(), "bibo-server-test-"));
@@ -21,7 +41,13 @@ test("registered accounts isolate conversation lists, while both visitors can wa
     finishReason: "stop",
     usage: { totalTokens: 31 },
   }));
-  const server = createWorldServer(store, runtime, auth);
+  const server = createWorldServer(
+    store,
+    runtime,
+    auth,
+    await deletionFor(dir, auth, store),
+    false,
+  );
   try {
     await new Promise<void>((resolve) =>
       server.listen(0, "127.0.0.1", resolve),
@@ -54,6 +80,13 @@ test("registered accounts isolate conversation lists, while both visitors can wa
     const cookieB = b.headers.get("set-cookie")!.split(";")[0]!;
     assert.notEqual(cookieA, cookieB);
     assert.match(a.headers.get("set-cookie")!, /HttpOnly/);
+    const notYetOpen = await fetch(`${base}/api/account/delete`, {
+      method: "POST",
+      headers: { Cookie: cookieA, "Content-Type": "application/json" },
+      body: JSON.stringify({ password: "longpassword123", confirm: true }),
+    });
+    assert.equal(notYetOpen.status, 503);
+    assert.notEqual(auth.account(cookieA.split("=")[1]), null);
     const requestId = "8aa9e674-7b48-4c63-84bc-9c2821b9fc20";
     const sent = await fetch(`${base}/api/spirits/mori/messages`, {
       method: "POST",
@@ -116,7 +149,13 @@ test("model failure returns an error without recording a turn or successful usag
   const runtime = new SpiritRuntime(store, async () => {
     throw new Error("model request failed (401)");
   });
-  const server = createWorldServer(store, runtime, auth);
+  const server = createWorldServer(
+    store,
+    runtime,
+    auth,
+    await deletionFor(dir, auth, store),
+    false,
+  );
   try {
     await new Promise<void>((resolve) =>
       server.listen(0, "127.0.0.1", resolve),
@@ -173,7 +212,13 @@ test("personal data export uses only the cookie identity and excludes other trav
     finishReason: "stop",
     usage: { totalTokens: 31 },
   }));
-  const server = createWorldServer(store, runtime, auth);
+  const server = createWorldServer(
+    store,
+    runtime,
+    auth,
+    await deletionFor(dir, auth, store),
+    false,
+  );
   try {
     await new Promise<void>((resolve) =>
       server.listen(0, "127.0.0.1", resolve),
@@ -267,6 +312,131 @@ test("personal data export uses only the cookie identity and excludes other trav
     const bobbyText = await bobbyResponse.text();
     assert.match(bobbyText, /bobby 的绿色线索/);
     assert.doesNotMatch(bobbyText, /alice 的蓝色线索|alice 的红色线索/);
+  } finally {
+    await new Promise<void>((resolve) => server.close(() => resolve()));
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("account deletion is cookie-scoped, password-confirmed, and leaves another traveler intact", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "bibo-delete-api-test-"));
+  const store = new WorldStore(dir);
+  await store.initialize();
+  const auth = new AuthStore(dir);
+  await auth.initialize();
+  const runtime = new SpiritRuntime(store, async () => ({
+    content: "精灵回应。",
+    toolCalls: [],
+    finishReason: "stop",
+    usage: { totalTokens: 31 },
+  }));
+  const server = createWorldServer(
+    store,
+    runtime,
+    auth,
+    await deletionFor(dir, auth, store),
+    true,
+  );
+  try {
+    await new Promise<void>((resolve) =>
+      server.listen(0, "127.0.0.1", resolve),
+    );
+    const address = server.address();
+    if (!address || typeof address === "string")
+      throw new Error("server address unavailable");
+    const base = `http://127.0.0.1:${address.port}`;
+    const register = async (name: string) => {
+      const response = await fetch(`${base}/api/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, password: "longpassword123" }),
+      });
+      assert.equal(response.status, 200);
+      const data = (await response.json()) as { account: { id: string } };
+      return {
+        id: data.account.id,
+        cookie: response.headers.get("set-cookie")!.split(";")[0]!,
+      };
+    };
+    const alice = await register("alice");
+    const bobby = await register("bobby");
+    for (const visitor of [alice, bobby]) {
+      await store.recordTurn({
+        spiritId: "mori",
+        visitorId: visitor.id,
+        message: `来自 ${visitor.id} 的线索`,
+        reply: "我听到了。",
+        spent: 10,
+        usageKind: "reported",
+      });
+    }
+    const deleteUrl = `${base}/api/account/delete?accountId=${bobby.id}`;
+    const requestDeletion = (cookie: string | undefined, body: unknown) =>
+      fetch(deleteUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(cookie ? { Cookie: cookie } : {}),
+        },
+        body: JSON.stringify(body),
+      });
+    assert.equal(
+      (
+        await requestDeletion(undefined, {
+          password: "longpassword123",
+          confirm: true,
+        })
+      ).status,
+      401,
+    );
+    assert.equal(
+      (
+        await requestDeletion(alice.cookie, {
+          password: "wrong-password",
+          confirm: true,
+        })
+      ).status,
+      401,
+    );
+    assert.equal(
+      (
+        await requestDeletion(alice.cookie, {
+          password: "longpassword123",
+          confirm: false,
+        })
+      ).status,
+      400,
+    );
+    const deleted = await requestDeletion(alice.cookie, {
+      password: "longpassword123",
+      confirm: true,
+      accountId: bobby.id,
+    });
+    assert.equal(deleted.status, 200);
+    assert.match(deleted.headers.get("set-cookie")!, /Max-Age=0/);
+    assert.deepEqual(await deleted.json(), { account: null, deleted: true });
+    const oldSession = await fetch(`${base}/api/session`, {
+      headers: { Cookie: alice.cookie },
+    });
+    assert.deepEqual(await oldSession.json(), { account: null });
+    assert.equal(
+      (
+        await fetch(`${base}/api/account/data`, {
+          headers: { Cookie: alice.cookie },
+        })
+      ).status,
+      401,
+    );
+    assert.equal(auth.account(bobby.cookie.split("=")[1])?.id, bobby.id);
+    assert.equal(store.recentEncounters("mori").length, 1);
+    assert.equal(store.recentEncounters("mori")[0]?.visitorId, bobby.id);
+    const replacement = await register("alice");
+    assert.notEqual(replacement.id, alice.id);
+    const newConversation = await fetch(
+      `${base}/api/spirits/mori/conversation`,
+      { headers: { Cookie: replacement.cookie } },
+    );
+    assert.deepEqual(await newConversation.json(), { messages: [] });
   } finally {
     await new Promise<void>((resolve) => server.close(() => resolve()));
     await rm(dir, { recursive: true, force: true });

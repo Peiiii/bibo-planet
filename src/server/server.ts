@@ -14,6 +14,7 @@ import {
   type SpiritId,
 } from "../shared/world.ts";
 import { AuthError, AuthStore } from "./auth-store.ts";
+import { AccountDeletion, DeletionPendingError } from "./account-deletion.ts";
 import { EnergyExhaustedError, WorldStore } from "./world-store.ts";
 import type { SpiritRuntime } from "./spirit-runtime.ts";
 
@@ -24,6 +25,8 @@ export function createWorldServer(
   store: WorldStore,
   runtime: Pick<SpiritRuntime, "talk" | "modelDisclosure">,
   auth: AuthStore,
+  deletion: AccountDeletion,
+  deletionEnabled: boolean,
 ): Server {
   return createServer(async (request, response) => {
     try {
@@ -63,6 +66,20 @@ export function createWorldServer(
           spirits: store.visitorData(account.id),
         };
         sendJson(response, 200, archive);
+        return;
+      }
+      if (request.method === "POST" && url.pathname === "/api/account/delete") {
+        assertMutation(request);
+        if (!deletionEnabled) throw new AuthError(503, "账号在线删除尚未开放");
+        if (!account || !token)
+          throw new AuthError(401, "请先登录，再删除你的账号");
+        const body = await readJsonBody(request);
+        if (body.confirm !== true)
+          throw new AuthError(400, "请先确认删除范围与影响");
+        const password = typeof body.password === "string" ? body.password : "";
+        await deletion.delete(token, password);
+        response.setHeader("Set-Cookie", sessionCookie("", 0));
+        sendJson(response, 200, { account: null, deleted: true });
         return;
       }
       if (
@@ -148,6 +165,11 @@ export function createWorldServer(
     } catch (error) {
       if (error instanceof AuthError) {
         sendJson(response, error.status, { error: error.message });
+        return;
+      }
+      if (error instanceof DeletionPendingError) {
+        console.error("Account deletion remains pending:", error.cause);
+        sendJson(response, 503, { error: error.message });
         return;
       }
       if (error instanceof EnergyExhaustedError) {
