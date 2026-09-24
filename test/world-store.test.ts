@@ -72,6 +72,55 @@ test("energy threshold refuses a new wake and credit restores it", async () => {
   }
 });
 
+test("an older shared clue is recalled after it leaves the recent window", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "bibo-recall-test-"));
+  try {
+    const store = new WorldStore(dir);
+    await store.initialize();
+    await store.recordTurn({
+      spiritId: "mori",
+      visitorId: "alice",
+      message: "这颗星球的暗号是蓝色风铃，英文代号 bluebell",
+      reply: "我记下了蓝色风铃。",
+      spent: 20,
+      usageKind: "reported",
+    });
+    for (let index = 0; index < 11; index += 1) {
+      await store.recordTurn({
+        spiritId: "mori",
+        visitorId: `other-${index}`,
+        message: `第${index}次普通路过`,
+        reply: "你好，旅人。",
+        spent: 20,
+        usageKind: "reported",
+      });
+    }
+    assert.equal(store.recentEncounters("mori", 10).length, 10);
+    assert.ok(
+      store
+        .recentEncounters("mori", 10)
+        .every((item) => !item.message.includes("蓝色风铃")),
+    );
+    assert.match(
+      store.relevantOlderEncounters("mori", "你还记得蓝色风铃吗")[0]!.message,
+      /蓝色风铃/,
+    );
+    assert.equal(
+      store.relevantOlderEncounters("mori", "Was bluebell mentioned?").length,
+      1,
+    );
+    assert.deepEqual(store.relevantOlderEncounters("mori", "你还记得吗"), []);
+    const restarted = new WorldStore(dir);
+    await restarted.initialize();
+    assert.equal(
+      restarted.relevantOlderEncounters("mori", "关于蓝色风铃").length,
+      1,
+    );
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
 test("same-spirit turns run serially", async () => {
   const dir = await mkdtemp(join(tmpdir(), "bibo-lock-test-"));
   try {

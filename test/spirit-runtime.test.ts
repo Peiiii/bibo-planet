@@ -86,3 +86,46 @@ test("the same visitor can continue a multi-turn conversation", async () => {
     await rm(dir, { recursive: true, force: true });
   }
 });
+
+test("a later visitor can cue an older shared memory without seeing private history", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "bibo-runtime-recall-test-"));
+  try {
+    const store = new WorldStore(dir);
+    await store.initialize();
+    await store.recordTurn({
+      spiritId: "sela",
+      visitorId: "alice",
+      message: "小星球的暗号是蓝色风铃",
+      reply: "蓝色风铃，我会记得。",
+      spent: 20,
+      usageKind: "reported",
+    });
+    for (let index = 0; index < 11; index += 1) {
+      await store.recordTurn({
+        spiritId: "sela",
+        visitorId: `visitor-${index}`,
+        message: `普通访问编号${index}`,
+        reply: "下次见。",
+        spent: 20,
+        usageKind: "reported",
+      });
+    }
+    let system = "";
+    const runtime = new SpiritRuntime(store, async (input) => {
+      system = String(input.messages[0]?.content);
+      return {
+        content: "我还记得那只蓝色风铃。",
+        toolCalls: [],
+        finishReason: "stop",
+        usage: { totalTokens: 80 },
+      };
+    });
+    await runtime.talk("sela", "bob", "你还记得蓝色风铃吗？");
+    assert.match(system, /更早共同遭遇/);
+    assert.match(system, /蓝色风铃/);
+    assert.equal(store.conversation("sela", "bob").length, 2);
+    assert.equal(store.conversation("sela", "alice").length, 2);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});

@@ -132,6 +132,36 @@ export class WorldStore {
     return this.requireState(spiritId).encounters.slice(-limit);
   }
 
+  relevantOlderEncounters = (
+    spiritId: SpiritId,
+    query: string,
+  ): Encounter[] => {
+    const cues = this.recallCues(query);
+    if (cues.length === 0) return [];
+    const older = this.requireState(spiritId).encounters.slice(0, -10);
+    return older
+      .map((encounter, index) => {
+        const text =
+          `${encounter.message.slice(0, 400)} ${encounter.reply.slice(0, 400)}`
+            .normalize("NFKC")
+            .toLowerCase();
+        const words = new Set(text.match(/[a-z0-9]{3,}/g) ?? []);
+        const score = cues.reduce(
+          (sum, cue) =>
+            sum +
+            (cue.kind === "han"
+              ? Number(text.includes(cue.text))
+              : Number(words.has(cue.text))),
+          0,
+        );
+        return { encounter, index, score };
+      })
+      .filter((item) => item.score > 0)
+      .sort((a, b) => b.score - a.score || b.index - a.index)
+      .slice(0, 4)
+      .map((item) => item.encounter);
+  };
+
   energy(spiritId: SpiritId): number {
     return this.requireState(spiritId).energy;
   }
@@ -234,4 +264,28 @@ export class WorldStore {
     await writeFile(temporary, JSON.stringify(state, null, 2), { mode: 0o600 });
     await rename(temporary, path);
   }
+
+  private recallCues = (
+    query: string,
+  ): Array<{ text: string; kind: "han" | "word" }> => {
+    const topical = query
+      .normalize("NFKC")
+      .toLowerCase()
+      .replace(/你还记得|还记得吗|有人说过|我们聊过|之前提到|你知道吗/g, " ");
+    const cues = new Map<string, { text: string; kind: "han" | "word" }>();
+    for (const run of topical.match(/\p{Script=Han}+/gu) ?? []) {
+      for (let index = 0; index <= run.length - 4; index += 1) {
+        const text = run.slice(index, index + 4);
+        cues.set(`han:${text}`, { text, kind: "han" });
+      }
+    }
+    for (const word of topical.match(/[a-z0-9]{3,}/g) ?? []) {
+      if (
+        ["remember", "before", "about", "there", "what", "with"].includes(word)
+      )
+        continue;
+      cues.set(`word:${word}`, { text: word, kind: "word" });
+    }
+    return [...cues.values()].slice(-64);
+  };
 }
