@@ -921,7 +921,7 @@ export function App() {
               <div className="account-result" role="status">
                 <strong>你在在线世界留下的原文已移除。</strong>
                 <p>
-                  账号与会话已经失效；历史加密备份仍会在公布的期限内保留，其他旅人此前收到的生成回复无法自动收回。
+                  账号与会话已经失效；历史加密备份会按公布的到期规则清理，其他旅人此前收到的生成回复无法自动收回。
                 </p>
                 <button type="button" onClick={closeAccountData}>
                   回到星球
@@ -970,9 +970,8 @@ export function App() {
                         将删除你的账号、所有登录会话、三只精灵与你的私人会话，及你贡献的共同遭遇。其他旅人的原始记录不会因此改写。
                       </p>
                       <p>
-                        历史加密备份最多保留{" "}
-                        {deletionPolicy.backupRetentionDays}
-                        天；如果恢复旧快照，删除记录会再次清理你的在线原文。其他旅人此前收到的生成回复无法自动收回。
+                        历史加密备份按 {deletionPolicy.backupRetentionDays}
+                        天到期规则清理；对象存储按天执行，实际清理可能延后。如果恢复旧快照，删除记录会再次清理你的在线原文。其他旅人此前收到的生成回复无法自动收回。
                       </p>
                       <p>
                         运营者：{deletionPolicy.operatorName} · 联系渠道：

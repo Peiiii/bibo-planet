@@ -27,6 +27,8 @@
 
 2026-09-24 12:53 使用有权读取桶配置的本机阿里云 CLI 查询 OSS `GetBucketLifecycle`，返回 `NoSuchLifecycle`；`daily/` 实际 4 个对象、15,495 字节。当前**没有**自动到期清理，ECS 上 `deploy/backup.sh` 成功上传后也会保留本地加密档案。删除策略和灾难恢复时防止已删除旅人数据回流须先设计、验证再配置；在此之前不要对访客承诺固定保留期或“删除后所有备份消失”。本次只读查询，没有改动桶和任何备份。
 
+2026-09-24 17:20 补核对[阿里云 PutBucketLifecycle 规则](https://help.aliyun.com/en/oss/developer-reference/putbucketlifecycle)与[到期执行机制](https://help.aliyun.com/en/oss/analysis-of-the-reasons-why-the-oss-configuration-file-does-not-take-effect-after-its-lifecycle)：`Expiration.Days` 以对象最后修改时间计算，但 OSS 会按日执行，到期后可能延迟删除，规则初次加载也可有延迟；`PutBucketLifecycle` 会覆盖整个桶的现有规则。将来配置时必须先读取并保留其它规则，限定 `daily/` 前缀而绝不覆盖不随快照回滚的 `deletions/`；核对实际对象清理结果并处理异常。页面不得承诺“最多 N 天”这样的硬上限，只能准确说明到期规则与可能延迟。当前仍未配置任何生命周期或执行删除。
+
 ### 账号删除记录的离机准备（2026-09-24 16:35，北京时间；尚未启用线上删除）
 
 - 新增独立 RAM 策略 `BiboPlanetDeletionLedger` 并附加到现有 ECS 角色 `BiboPlanetBackupRole`：只允许对私有桶的 `deletions/` 前缀列举、读取、写入；无删除权，原 `daily/` 仍只有备份上传权。已从 RAM API 回读实际策略版本 `v1` 与附加关系。以服务身份 `bibo-planet` 实试写入、读回并同步 `deletions/schema-v1.json` 成功；反向列举 `daily/` 返回 403。该标记只有格式号，不含账号或对话。策略文件为 [`deploy/deletion-ledger-ram-policy.json`](../deploy/deletion-ledger-ram-policy.json)，标记内容为 [`deploy/deletion-ledger-marker.json`](../deploy/deletion-ledger-marker.json)。[阿里云前缀授权说明](https://help.aliyun.com/en/oss/user-guide/access-control-base-on-ram-policy)与[OSS 成功写入后的强一致性说明](https://help.aliyun.com/en/oss/user-guide/what-is-oss)是权限及重放设计依据。
