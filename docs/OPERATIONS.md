@@ -54,6 +54,8 @@
 
 ## 版本更新与回滚
 
+当前注册体验发布锚点（2026-09-24 20:18，北京时间）：ECS 后端源码 Git `3c7f990`，前端/Worker 源码 Git `36343e8`，Worker 版本 `8ad22465-1217-4a82-bb66-410a8b5f23f5`，静态 JS `index-CqYF4aTf.js`。后端升级前同一 Bibo 专用备份服务 success，私有 OSS 确认对象 `daily/daily-2026-09-24-201141.0UIaVccW.tar.gz.gpg` 为 16,026 字节；此次尚未取回解密。远端 TypeScript 通过后仅重启 Bibo，Bibo 与备份 timer active，`NRestarts=0`。公网隔离浏览器核对 7 字符错误、8 字符注册、退出重登及改正输入后错误立即消失；首页、世界/会话 API、原 `nextclaw.net` 首页均 200，未带边缘密钥的源站 Bibo 路径 403。余额只读检查仍在已知 1–10 元区间，未充值或做新的模型调用。首个自然 timer、完整数据权利/备份保留期、运营与备案问题仍开放，不能把这次局部体验修正视为正式获客验收完成。
+
 1. 在本地完成 TypeScript、测试、构建、真实模型和差异审查，记录待发布 Git SHA。公开前端与后端的 API 合同要一起验证，不把未推送的本地文件当发布源。
 2. 先备份数据。在 ECS 确认 `/opt/bibo-planet` 工作区干净、当前 SHA 和服务健康；从已推送仓库快进到待发布 SHA。使用 `/opt/bibo-node/bin` 下的 pnpm 按锁文件安装依赖，然后只重启 `bibo-planet`，确认其日志和公网 API。不要重启 NextClaw 原服务。
 3. 若前端/Worker 发生变化，在本地用 Wrangler 发布同一 Git SHA 的 Cloudflare Worker。Worker secret 应保留；不可把它写进 `wrangler.jsonc`。发布后重新检查首页、账号、连续两轮真实对话、跨账号隔离与原站可用性。
