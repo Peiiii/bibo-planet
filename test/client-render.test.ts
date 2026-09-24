@@ -2,7 +2,13 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { App, activityLabel, renderSpiritText } from "../src/client/app.tsx";
+import {
+  App,
+  activityLabel,
+  appendCompletedTurn,
+  mergeConversationHistory,
+  renderSpiritText,
+} from "../src/client/app.tsx";
 
 test("conversation identifies the spirit as AI before a visitor sends a message", () => {
   const html = renderToStaticMarkup(createElement(App));
@@ -23,4 +29,45 @@ test("mobile activity labels preserve recency without overflowing cards", () => 
   assert.equal(activityLabel(recent), "5 分钟前有人来过");
   assert.equal(activityLabel(recent, true), "5分钟前");
   assert.equal(activityLabel(null, true), "等待相遇");
+});
+
+test("a completed turn is visible immediately and a replay cannot duplicate it", () => {
+  const reply = {
+    id: "reply-1",
+    role: "spirit" as const,
+    text: "星球还在。",
+    createdAt: "2026-09-24T06:00:00.000Z",
+  };
+  const once = appendCompletedTurn([], "你还在吗？", "request-1", reply);
+  assert.deepEqual(
+    once.map(({ role, text }) => [role, text]),
+    [
+      ["visitor", "你还在吗？"],
+      ["spirit", "星球还在。"],
+    ],
+  );
+  assert.equal(
+    appendCompletedTurn(once, "你还在吗？", "request-1", reply),
+    once,
+  );
+  const oldHistory = [
+    {
+      id: "old-visitor",
+      requestId: "request-0",
+      role: "visitor" as const,
+      text: "之前的话",
+      createdAt: reply.createdAt,
+    },
+    { ...reply, id: "old-reply" },
+  ];
+  const merged = mergeConversationHistory(oldHistory, once);
+  assert.equal(merged.length, 4);
+  assert.equal(merged[0]?.text, "之前的话");
+  assert.equal(merged[2]?.text, "你还在吗？");
+  const canonical = [
+    ...oldHistory,
+    { ...once[0]!, id: "saved-visitor" },
+    reply,
+  ];
+  assert.deepEqual(mergeConversationHistory(canonical, once), canonical);
 });

@@ -54,15 +54,34 @@ test("registered accounts isolate conversation lists, while both visitors can wa
     const cookieB = b.headers.get("set-cookie")!.split(";")[0]!;
     assert.notEqual(cookieA, cookieB);
     assert.match(a.headers.get("set-cookie")!, /HttpOnly/);
+    const requestId = "8aa9e674-7b48-4c63-84bc-9c2821b9fc20";
     const sent = await fetch(`${base}/api/spirits/mori/messages`, {
       method: "POST",
       headers: { Cookie: cookieA, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        message: "你好",
-        requestId: "8aa9e674-7b48-4c63-84bc-9c2821b9fc20",
-      }),
+      body: JSON.stringify({ message: "你好", requestId }),
     });
     assert.equal(sent.status, 200);
+    const firstTurn = (await sent.json()) as {
+      spirit: { energy: number; encounters: number; lastEncounterAt: string };
+      reply: { text: string };
+      account: { remainingToday: number };
+    };
+    assert.equal(firstTurn.reply.text, "你好，来访者。");
+    assert.equal(firstTurn.spirit.encounters, 1);
+    assert.equal(firstTurn.spirit.lastEncounterAt.length > 0, true);
+    assert.equal(firstTurn.account.remainingToday, 11);
+    const replay = await fetch(`${base}/api/spirits/mori/messages`, {
+      method: "POST",
+      headers: { Cookie: cookieA, "Content-Type": "application/json" },
+      body: JSON.stringify({ message: "你好", requestId }),
+    });
+    assert.equal(replay.status, 200);
+    const replayedTurn = (await replay.json()) as typeof firstTurn & {
+      replayed: boolean;
+    };
+    assert.equal(replayedTurn.replayed, true);
+    assert.deepEqual(replayedTurn.spirit, firstTurn.spirit);
+    assert.equal(replayedTurn.account.remainingToday, 11);
     for (const spiritId of ["mori", "piko", "sela"]) {
       const convoA = await fetch(
         `${base}/api/spirits/${spiritId}/conversation`,

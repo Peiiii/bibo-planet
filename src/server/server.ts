@@ -130,13 +130,18 @@ export function createWorldServer(
           sendJson(response, 200, {
             ...completed,
             account: auth.account(token),
+            spirit: store.world().spirits.find((item) => item.id === spirit.id),
           });
           return;
         }
         const result = await auth.withMessagePermit(account.id, () =>
           runtime.talk(spirit.id as SpiritId, account.id, message, requestId),
         );
-        sendJson(response, 200, { ...result, account: auth.account(token) });
+        sendJson(response, 200, {
+          ...result,
+          account: auth.account(token),
+          spirit: store.world().spirits.find((item) => item.id === spirit.id),
+        });
         return;
       }
       sendJson(response, 404, { error: "入口不存在" });

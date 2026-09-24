@@ -62,6 +62,56 @@ export function renderSpiritText(text: string) {
     );
 }
 
+export function appendCompletedTurn(
+  messages: ChatMessage[],
+  message: string,
+  requestId: string,
+  reply: ChatMessage,
+): ChatMessage[] {
+  if (
+    messages.some(
+      (item) => item.role === "visitor" && item.requestId === requestId,
+    )
+  )
+    return messages;
+  return [
+    ...messages,
+    {
+      id: requestId,
+      requestId,
+      role: "visitor",
+      text: message,
+      createdAt: reply.createdAt,
+    },
+    reply,
+  ];
+}
+
+export function mergeConversationHistory(
+  persisted: ChatMessage[],
+  visible: ChatMessage[],
+): ChatMessage[] {
+  let merged = persisted;
+  for (let index = 0; index < visible.length - 1; index += 1) {
+    const visitor = visible[index];
+    const reply = visible[index + 1];
+    if (
+      visitor?.role === "visitor" &&
+      visitor.requestId &&
+      visitor.id === visitor.requestId &&
+      reply?.role === "spirit"
+    ) {
+      merged = appendCompletedTurn(
+        merged,
+        visitor.text,
+        visitor.requestId,
+        reply,
+      );
+    }
+  }
+  return merged;
+}
+
 export function App() {
   const [spirits, setSpirits] = useState<SpiritView[]>([]);
   const [modelDisclosure, setModelDisclosure] =
@@ -162,7 +212,10 @@ export function App() {
       `/api/spirits/${selectedId}/conversation`,
     )
       .then((data) => {
-        if (active) setMessages(data.messages);
+        if (active)
+          setMessages((current) =>
+            mergeConversationHistory(data.messages, current),
+          );
       })
       .catch((cause: unknown) => {
         if (active)
@@ -196,29 +249,20 @@ export function App() {
           ? pendingRequest.current.id
           : crypto.randomUUID();
       pendingRequest.current = { id: requestId, message, spiritId: selectedId };
-      const result = await api<ChatResponse & { account: Account }>(
-        `/api/spirits/${selectedId}/messages`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message, requestId }),
-        },
+      const result = await api<
+        ChatResponse & { account: Account; spirit: SpiritView }
+      >(`/api/spirits/${selectedId}/messages`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message, requestId }),
+      });
+      setMessages((current) =>
+        appendCompletedTurn(current, message, requestId, result.reply),
       );
-      const conversation = await api<{ messages: ChatMessage[] }>(
-        `/api/spirits/${selectedId}/conversation`,
-      );
-      setMessages(conversation.messages);
       setAccount(result.account);
       setSpirits((current) =>
         current.map((spirit) =>
-          spirit.id === selectedId
-            ? {
-                ...spirit,
-                energy: result.energy,
-                encounters: spirit.encounters + 1,
-                lastEncounterAt: new Date().toISOString(),
-              }
-            : spirit,
+          spirit.id === selectedId ? result.spirit : spirit,
         ),
       );
       setDraft("");
@@ -338,7 +382,7 @@ export function App() {
               <button
                 type="button"
                 onClick={() => void exportPersonalData()}
-                disabled={exporting}
+                disabled={exporting || busy}
                 title="文件含你的私人对话，请妥善保存"
               >
                 {exporting ? "准备中…" : "导出我的数据"}
@@ -346,7 +390,7 @@ export function App() {
               <button
                 type="button"
                 onClick={() => void logout()}
-                disabled={exporting}
+                disabled={exporting || busy}
               >
                 退出
               </button>
