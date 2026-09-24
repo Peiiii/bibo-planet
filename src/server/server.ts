@@ -22,7 +22,7 @@ const root = resolve(fileURLToPath(new URL("../../dist/", import.meta.url)));
 
 export function createWorldServer(
   store: WorldStore,
-  runtime: Pick<SpiritRuntime, "talk">,
+  runtime: Pick<SpiritRuntime, "talk" | "modelDisclosure">,
   auth: AuthStore,
 ): Server {
   return createServer(async (request, response) => {
@@ -44,7 +44,10 @@ export function createWorldServer(
       const account = auth.account(token);
       const clientIp = getClientIp(request);
       if (request.method === "GET" && url.pathname === "/api/world") {
-        sendJson(response, 200, store.world());
+        sendJson(response, 200, {
+          ...store.world(),
+          model: runtime.modelDisclosure,
+        });
         return;
       }
       if (request.method === "GET" && url.pathname === "/api/session") {

@@ -30,6 +30,16 @@ test("registered accounts isolate conversation lists, while both visitors can wa
     if (!address || typeof address === "string")
       throw new Error("server address unavailable");
     const base = `http://127.0.0.1:${address.port}`;
+    const worldResponse = await fetch(`${base}/api/world`);
+    assert.equal(worldResponse.status, 200);
+    const worldBody = (await worldResponse.json()) as {
+      model: {
+        name: string;
+        filingNumber: string | null;
+        sourceUrl: string | null;
+      };
+    };
+    assert.deepEqual(worldBody.model, runtime.modelDisclosure);
     const register = (name: string) =>
       fetch(`${base}/api/register`, {
         method: "POST",

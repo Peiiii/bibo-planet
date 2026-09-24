@@ -4,6 +4,7 @@ import {
   MIN_WAKE_ENERGY,
   type ChatMessage,
   type ChatResponse,
+  type ModelDisclosure,
   type PersonalDataArchive,
   type SpiritId,
   type SpiritView,
@@ -63,6 +64,8 @@ export function renderSpiritText(text: string) {
 
 export function App() {
   const [spirits, setSpirits] = useState<SpiritView[]>([]);
+  const [modelDisclosure, setModelDisclosure] =
+    useState<ModelDisclosure | null>(null);
   const [selectedId, setSelectedId] = useState<SpiritId>("mori");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState("");
@@ -116,6 +119,7 @@ export function App() {
         .then((world) => {
           if (active) {
             setSpirits(world.spirits);
+            setModelDisclosure(world.model);
             setWorldError("");
           }
         })
@@ -427,6 +431,28 @@ export function App() {
             <div>
               <p className="eyebrow">AI 精灵 · 回复由模型生成</p>
               <h2>{selected ? `与 ${selected.name} 说话` : "选择一只精灵"}</h2>
+              {modelDisclosure && (
+                <p className="model-disclosure">
+                  模型：{modelDisclosure.name}
+                  {modelDisclosure.filingNumber ? (
+                    <> · 备案号 {modelDisclosure.filingNumber}</>
+                  ) : (
+                    <> · 备案信息待核定</>
+                  )}
+                  {modelDisclosure.sourceUrl && (
+                    <>
+                      {" "}
+                      <a
+                        href={modelDisclosure.sourceUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        公示来源 ↗
+                      </a>
+                    </>
+                  )}
+                </p>
+              )}
             </div>
             <span className="header-symbol" aria-hidden="true">
               {selected?.symbol ?? "✦"}

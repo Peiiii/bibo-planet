@@ -6,6 +6,30 @@ import { test } from "node:test";
 import { SpiritRuntime } from "../src/server/spirit-runtime.ts";
 import { WorldStore } from "../src/server/world-store.ts";
 
+test("model disclosure follows the configured provider instead of claiming a stale filing", () => {
+  const previous = process.env.BIBO_MODEL;
+  try {
+    process.env.BIBO_MODEL = "deepseek/deepseek-chat";
+    const deepseek = new SpiritRuntime(new WorldStore("unused"));
+    assert.deepEqual(deepseek.modelDisclosure, {
+      name: "Deepseek Chat",
+      filingNumber: "Beijing-DeepseekChat-202404280016",
+      sourceUrl:
+        "https://cdn.deepseek.com/policies/zh-CN/model-algorithm-disclosure.html",
+    });
+    process.env.BIBO_MODEL = "other/unknown";
+    const unknown = new SpiritRuntime(new WorldStore("unused"));
+    assert.deepEqual(unknown.modelDisclosure, {
+      name: "other/unknown",
+      filingNumber: null,
+      sourceUrl: null,
+    });
+  } finally {
+    if (previous === undefined) delete process.env.BIBO_MODEL;
+    else process.env.BIBO_MODEL = previous;
+  }
+});
+
 test("different visitors share encounters without sharing private dialogue", async () => {
   const dir = await mkdtemp(join(tmpdir(), "bibo-runtime-test-"));
   try {

@@ -57,7 +57,16 @@ export type SpiritView = {
   lastEncounterAt: string | null;
 };
 
-export type WorldView = { spirits: SpiritView[] };
+export type ModelDisclosure = {
+  name: string;
+  filingNumber: string | null;
+  sourceUrl: string | null;
+};
+
+export type WorldView = {
+  spirits: SpiritView[];
+  model: ModelDisclosure;
+};
 export type PersonalDataArchive = {
   format: "bibo-planet-personal-data-v1";
   exportedAt: string;

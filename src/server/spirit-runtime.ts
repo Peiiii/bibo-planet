@@ -9,6 +9,7 @@ import {
   SPIRITS,
   findSpirit,
   type ChatResponse,
+  type ModelDisclosure,
   type SpiritId,
   type UsageKind,
 } from "../shared/world.ts";
@@ -45,6 +46,18 @@ export class SpiritRuntime {
   ) {
     this.chat = chat ?? null;
     this.model = process.env.BIBO_MODEL?.trim() || "deepseek/deepseek-chat";
+  }
+
+  get modelDisclosure(): ModelDisclosure {
+    if (this.model === "deepseek/deepseek-chat") {
+      return {
+        name: "Deepseek Chat",
+        filingNumber: "Beijing-DeepseekChat-202404280016",
+        sourceUrl:
+          "https://cdn.deepseek.com/policies/zh-CN/model-algorithm-disclosure.html",
+      };
+    }
+    return { name: this.model, filingNumber: null, sourceUrl: null };
   }
 
   async start(): Promise<void> {

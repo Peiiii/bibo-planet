@@ -68,7 +68,7 @@ export class WorldStore {
     }
   }
 
-  world(): WorldView {
+  world(): Pick<WorldView, "spirits"> {
     return {
       spirits: SPIRITS.map((spirit): SpiritView => {
         const state = this.requireState(spirit.id);

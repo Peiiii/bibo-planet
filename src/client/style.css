@@ -394,6 +394,18 @@ a {
   margin: 0;
   letter-spacing: -0.04em;
 }
+.model-disclosure {
+  margin: 9px 0 0;
+  max-width: 490px;
+  color: #6f7280;
+  font-size: 10px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.model-disclosure a {
+  color: #8e6d57;
+  text-decoration: underline;
+}
 .header-symbol {
   font-size: 25px;
   color: #967e92;
