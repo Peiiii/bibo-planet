@@ -1,0 +1,5 @@
+# Bibo Planet
+
+Bibo Planet 是一颗没有主人的共享 AI 精灵星球。访客可以注册为旅人，与同一批精灵交谈；精灵可能把一次相遇的线索带入与其他旅人的对话。请不要向精灵透露秘密或个人隐私。
+
+- [访问 Bibo Planet](https://planet.bibo.bot/)

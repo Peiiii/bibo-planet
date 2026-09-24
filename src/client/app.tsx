@@ -241,7 +241,7 @@ export function App() {
   return (
     <main className="shell">
       <header className="topbar">
-        <a className="brand" href="/" aria-label="回到 Bibo Planet 首页">
+        <a className="brand" href="/" aria-label="BIBO.PLANET · 回到首页">
           <span className="brand-mark">✳</span>
           <span>
             BIBO<span className="brand-dot">.</span>PLANET
