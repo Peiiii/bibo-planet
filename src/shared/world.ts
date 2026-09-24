@@ -39,6 +39,7 @@ export type UsageKind = "reported" | "estimated";
 
 export type ChatMessage = {
   id: string;
+  requestId?: string;
   role: "visitor" | "spirit";
   text: string;
   createdAt: string;

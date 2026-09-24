@@ -14,6 +14,7 @@ import {
 } from "../shared/world.ts";
 
 export type Encounter = {
+  requestId?: string;
   visitorId: string;
   message: string;
   reply: string;
@@ -89,6 +90,43 @@ export class WorldStore {
     return [...(this.requireState(spiritId).conversations[visitorId] ?? [])];
   }
 
+  completedRequest(
+    spiritId: SpiritId,
+    visitorId: string,
+    requestId: string,
+  ): {
+    reply: ChatMessage;
+    energy: number;
+    spent: number;
+    usageKind: UsageKind;
+    replayed: true;
+  } | null {
+    const state = this.requireState(spiritId);
+    const messages = state.conversations[visitorId] ?? [];
+    const index = messages.findIndex(
+      (item) => item.role === "visitor" && item.requestId === requestId,
+    );
+    const reply = messages[index + 1];
+    const encounter = state.encounters.find(
+      (item) => item.requestId === requestId && item.visitorId === visitorId,
+    );
+    if (
+      index < 0 ||
+      !reply ||
+      reply.role !== "spirit" ||
+      !encounter?.spent ||
+      !encounter.usageKind
+    )
+      return null;
+    return {
+      reply,
+      energy: state.energy,
+      spent: encounter.spent,
+      usageKind: encounter.usageKind,
+      replayed: true,
+    };
+  }
+
   recentEncounters(spiritId: SpiritId, limit = 8): Encounter[] {
     return this.requireState(spiritId).encounters.slice(-limit);
   }
@@ -117,6 +155,7 @@ export class WorldStore {
   }
 
   async recordTurn(input: {
+    requestId?: string;
     spiritId: SpiritId;
     visitorId: string;
     message: string;
@@ -124,13 +163,15 @@ export class WorldStore {
     spent: number;
     usageKind: UsageKind;
   }): Promise<{ reply: ChatMessage; energy: number }> {
-    const { spiritId, visitorId, message, reply, spent, usageKind } = input;
+    const { spiritId, visitorId, message, reply, spent, usageKind, requestId } =
+      input;
     if (!Number.isSafeInteger(spent) || spent < 1)
       throw new Error("无效的能量消耗");
     const old = this.requireState(spiritId);
     const createdAt = new Date().toISOString();
     const visitorMessage: ChatMessage = {
       id: randomUUID(),
+      ...(requestId ? { requestId } : {}),
       role: "visitor",
       text: message,
       createdAt,
@@ -146,7 +187,7 @@ export class WorldStore {
       energy: Math.max(0, old.energy - spent),
       encounters: [
         ...old.encounters,
-        { visitorId, message, reply, createdAt, spent, usageKind },
+        { requestId, visitorId, message, reply, createdAt, spent, usageKind },
       ],
       conversations: {
         ...old.conversations,

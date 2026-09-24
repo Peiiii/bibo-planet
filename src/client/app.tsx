@@ -17,15 +17,15 @@ async function api<T>(path: string, options?: RequestInit): Promise<T> {
       ...options,
     });
   } catch {
-    throw new Error(
-      "星球服务已离线。请在项目目录运行 pnpm local:start，然后刷新页面。",
-    );
+    throw new Error("星球暂时无法连接，请稍后重试。");
   }
   const body = (await response.json()) as T & { error?: string };
   if (!response.ok)
     throw new Error(body.error || `请求失败：${response.status}`);
   return body;
 }
+
+type Account = { id: string; name: string; remainingToday: number };
 
 export function App() {
   const [spirits, setSpirits] = useState<SpiritView[]>([]);
@@ -39,7 +39,20 @@ export function App() {
     count: number;
     estimated: boolean;
   } | null>(null);
+  const [account, setAccount] = useState<Account | null>(null);
+  const [sessionReady, setSessionReady] = useState(false);
+  const [authOpen, setAuthOpen] = useState(false);
+  const [authMode, setAuthMode] = useState<"register" | "login">("register");
+  const [authName, setAuthName] = useState("");
+  const [authPassword, setAuthPassword] = useState("");
+  const [authBusy, setAuthBusy] = useState(false);
+  const [authError, setAuthError] = useState("");
   const chatScroll = useRef<HTMLDivElement>(null);
+  const pendingRequest = useRef<{
+    id: string;
+    message: string;
+    spiritId: SpiritId;
+  } | null>(null);
   const selected = spirits.find((spirit) => spirit.id === selectedId);
 
   useEffect(() => {
@@ -52,10 +65,18 @@ export function App() {
   }, []);
 
   useEffect(() => {
+    void api<{ account: Account | null }>("/api/session")
+      .then((result) => setAccount(result.account))
+      .catch(() => setAccount(null))
+      .finally(() => setSessionReady(true));
+  }, []);
+
+  useEffect(() => {
     let active = true;
     setMessages([]);
     setLastSpent(null);
     setError("");
+    if (!sessionReady || !account) return;
     void api<{ messages: ChatMessage[] }>(
       `/api/spirits/${selectedId}/conversation`,
     )
@@ -69,7 +90,7 @@ export function App() {
     return () => {
       active = false;
     };
-  }, [selectedId]);
+  }, [selectedId, account?.id, sessionReady]);
 
   useEffect(() => {
     const container = chatScroll.current;
@@ -81,21 +102,32 @@ export function App() {
     const message = draft.trim();
     if (!message || busy || !selected || selected.energy < MIN_WAKE_ENERGY)
       return;
+    if (!account) {
+      setAuthOpen(true);
+      return;
+    }
     setBusy(true);
     setError("");
     try {
-      const result = await api<ChatResponse>(
+      const requestId =
+        pendingRequest.current?.message === message &&
+        pendingRequest.current.spiritId === selectedId
+          ? pendingRequest.current.id
+          : crypto.randomUUID();
+      pendingRequest.current = { id: requestId, message, spiritId: selectedId };
+      const result = await api<ChatResponse & { account: Account }>(
         `/api/spirits/${selectedId}/messages`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message }),
+          body: JSON.stringify({ message, requestId }),
         },
       );
       const conversation = await api<{ messages: ChatMessage[] }>(
         `/api/spirits/${selectedId}/conversation`,
       );
       setMessages(conversation.messages);
+      setAccount(result.account);
       setSpirits((current) =>
         current.map((spirit) =>
           spirit.id === selectedId
@@ -108,6 +140,7 @@ export function App() {
         ),
       );
       setDraft("");
+      pendingRequest.current = null;
       setLastSpent({
         count: result.spent,
         estimated: result.usageKind === "estimated",
@@ -118,6 +151,42 @@ export function App() {
       );
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function submitAuth(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setAuthBusy(true);
+    setAuthError("");
+    try {
+      const result = await api<{ account: Account }>(`/api/${authMode}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: authName, password: authPassword }),
+      });
+      setAccount(result.account);
+      setAuthOpen(false);
+      setAuthPassword("");
+    } catch (cause) {
+      setAuthError(
+        cause instanceof Error ? cause.message : "进入星球失败，请重试",
+      );
+    } finally {
+      setAuthBusy(false);
+    }
+  }
+
+  async function logout() {
+    try {
+      await api("/api/logout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: "{}",
+      });
+      setAccount(null);
+      setMessages([]);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "退出失败");
     }
   }
 
@@ -134,6 +203,20 @@ export function App() {
           <span className="live-dot" />
           一颗仍在生长的星球 <span className="top-number">· 001</span>
         </div>
+        <div className="account-actions">
+          {account ? (
+            <>
+              <span>旅人 · {account.name}</span>
+              <button type="button" onClick={() => void logout()}>
+                退出
+              </button>
+            </>
+          ) : (
+            <button type="button" onClick={() => setAuthOpen(true)}>
+              成为旅人 <span>↗</span>
+            </button>
+          )}
+        </div>
       </header>
 
       <div className="layout">
@@ -147,6 +230,9 @@ export function App() {
             </h1>
             <p className="intro">
               你来到一颗很小的星球。它们在这里生活，记得来过的人，也可能被你改变。你可以与任何一只说话，但没有谁能预先拥有它。
+            </p>
+            <p className="shared-notice">
+              请别留下秘密。精灵会把相遇带入与其他旅人的对话。
             </p>
           </div>
 
@@ -229,8 +315,16 @@ export function App() {
             {messages.length === 0 && !loading && (
               <div className="empty-chat">
                 <div className="empty-symbol">✧</div>
-                <p>现在，故事还没有从你这里开始。</p>
-                <span>说一句话，看看它会怎样回应。</span>
+                <p>
+                  {account
+                    ? "现在，故事还没有从你这里开始。"
+                    : "你可以先观察，再决定是否靠近。"}
+                </p>
+                <span>
+                  {account
+                    ? "说一句话，看看它会怎样回应。"
+                    : "成为旅人之后，就能与同一只精灵持续交谈。"}
+                </span>
               </div>
             )}
             {messages.map((message) => (
@@ -259,6 +353,11 @@ export function App() {
                 {lastSpent.estimated
                   ? "（模型未报告 token，按文字估算）"
                   : "（模型报告 token）"}
+              </p>
+            )}
+            {account && (
+              <p className="quota-note">
+                今天还能唤醒 {account.remainingToday} 次 · 所有旅人共享这颗星球
               </p>
             )}
             {error && (
@@ -314,7 +413,7 @@ export function App() {
             </form>
             <div className="composer-hint">
               <span>ENTER 发送 · SHIFT + ENTER 换行</span>
-              <span>这里没有主人</span>
+              <span>{account ? "这里没有主人" : "发送时可注册或登录"}</span>
             </div>
           </div>
         </section>
@@ -323,6 +422,93 @@ export function App() {
         <span>AN EXPERIMENT IN SHARED EXISTENCE</span>
         <span>BE CURIOUS · BE KIND</span>
       </footer>
+      {authOpen && (
+        <div
+          className="auth-backdrop"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setAuthOpen(false);
+          }}
+        >
+          <section
+            className="auth-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="auth-title"
+          >
+            <button
+              type="button"
+              className="auth-close"
+              aria-label="关闭"
+              onClick={() => setAuthOpen(false)}
+            >
+              ×
+            </button>
+            <p className="eyebrow">A PLACE WITHOUT OWNERS</p>
+            <h2 id="auth-title">
+              {authMode === "register" ? "留下你的名字" : "欢迎回来，旅人"}
+            </h2>
+            <p className="auth-intro">
+              {authMode === "register"
+                ? "你可以认识这里的精灵，却不能拥有它们。不同旅人会遇见同一个存在。"
+                : "找回你与精灵的对话，继续你们未完的相遇。"}
+            </p>
+            <form onSubmit={(event) => void submitAuth(event)}>
+              <label htmlFor="auth-name">旅人昵称</label>
+              <input
+                id="auth-name"
+                autoComplete="username"
+                value={authName}
+                onChange={(event) => setAuthName(event.target.value)}
+                required
+                minLength={3}
+                maxLength={24}
+                placeholder="3–24 个字符"
+              />
+              <label htmlFor="auth-password">密码</label>
+              <input
+                id="auth-password"
+                type="password"
+                autoComplete={
+                  authMode === "register" ? "new-password" : "current-password"
+                }
+                value={authPassword}
+                onChange={(event) => setAuthPassword(event.target.value)}
+                required
+                minLength={authMode === "register" ? 10 : 1}
+                placeholder={
+                  authMode === "register" ? "至少 10 个字符" : "输入密码"
+                }
+              />
+              {authError && (
+                <p className="error-note" role="alert">
+                  {authError}
+                </p>
+              )}
+              <button type="submit" className="auth-submit" disabled={authBusy}>
+                {authBusy
+                  ? "正在进入…"
+                  : authMode === "register"
+                    ? "进入星球"
+                    : "继续相遇"}
+              </button>
+            </form>
+            <button
+              type="button"
+              className="auth-switch"
+              onClick={() => {
+                setAuthMode(authMode === "register" ? "login" : "register");
+                setAuthError("");
+              }}
+            >
+              {authMode === "register" ? "已经来过？登录" : "第一次来？注册"}
+            </button>
+            <p className="auth-disclaimer">
+              请勿输入个人隐私或秘密。精灵的经历可能影响它与其他人的对话。
+            </p>
+          </section>
+        </div>
+      )}
     </main>
   );
 }

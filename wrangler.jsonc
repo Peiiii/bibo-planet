@@ -1,0 +1,18 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "bibo-planet",
+  "main": "src/edge/worker.ts",
+  "compatibility_date": "2026-09-24",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  "routes": [{ "pattern": "planet.bibo.bot", "custom_domain": true }],
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"]
+  },
+  "vars": { "BIBO_ORIGIN": "https://nextclaw.net" },
+  "secrets": { "required": ["BIBO_EDGE_SECRET"] },
+  "observability": { "enabled": true, "head_sampling_rate": 1 }
+}
