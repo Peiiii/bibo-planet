@@ -25,6 +25,7 @@ type Account = {
   usageCount: number;
   attemptDay?: string;
   attemptCount?: number;
+  deleting?: true;
 };
 
 type Session = { accountId: string; expiresAt: number };
@@ -32,6 +33,7 @@ type AuthState = {
   version: 1;
   accounts: Account[];
   sessions: Record<string, Session>;
+  worldAttemptCarry?: { day: string; count: number };
 };
 
 export type AccountView = { id: string; name: string; remainingToday: number };
@@ -134,9 +136,17 @@ export class AuthStore {
     const account = this.state.accounts.find(
       (item) => item.normalizedName === normalizedName,
     );
-    if (!account || !(await checkPassword(password, account.password)))
+    if (
+      !account ||
+      account.deleting ||
+      !(await checkPassword(password, account.password))
+    )
       throw new AuthError(401, "昵称或密码不正确");
     return await this.serial(async () => {
+      const current = this.state.accounts.find(
+        (item) => item.id === account.id && !item.deleting,
+      );
+      if (!current) throw new AuthError(401, "昵称或密码不正确");
       const token = randomBytes(32).toString("base64url");
       const next: AuthState = {
         ...this.state,
@@ -150,7 +160,7 @@ export class AuthStore {
       };
       await this.persist(next);
       this.state = next;
-      return { account: this.view(account), token };
+      return { account: this.view(current), token };
     });
   }
 
@@ -161,7 +171,7 @@ export class AuthStore {
     const account = this.state.accounts.find(
       (item) => item.id === session.accountId,
     );
-    return account ? this.view(account) : null;
+    return account && !account.deleting ? this.view(account) : null;
   }
 
   accountData(accountId: string): Pick<
@@ -172,7 +182,8 @@ export class AuthStore {
     attemptCount: number;
   } {
     const account = this.state.accounts.find((item) => item.id === accountId);
-    if (!account) throw new AuthError(401, "登录状态已失效");
+    if (!account || account.deleting)
+      throw new AuthError(401, "登录状态已失效");
     const { id, name, createdAt, usageDay, usageCount } = account;
     return {
       id,
@@ -198,6 +209,75 @@ export class AuthStore {
     });
   }
 
+  async beginDeletion(token: string, password: string): Promise<string> {
+    const session = this.state.sessions[tokenHash(token)];
+    const account = this.state.accounts.find(
+      (item) => item.id === session?.accountId && !item.deleting,
+    );
+    if (!session || session.expiresAt <= Date.now() || !account)
+      throw new AuthError(401, "登录状态已失效");
+    if (!(await checkPassword(password, account.password)))
+      throw new AuthError(401, "密码不正确");
+    return await this.serial(async () => {
+      const currentSession = this.state.sessions[tokenHash(token)];
+      const current = this.state.accounts.find(
+        (item) => item.id === currentSession?.accountId && !item.deleting,
+      );
+      if (
+        !currentSession ||
+        currentSession.expiresAt <= Date.now() ||
+        !current ||
+        current.id !== account.id
+      )
+        throw new AuthError(401, "登录状态已失效");
+      if (this.inFlight.has(current.id))
+        throw new AuthError(409, "请等上一条消息完成后再删除账号");
+      const accounts = this.state.accounts.map((item) =>
+        item.id === current.id ? { ...item, deleting: true as const } : item,
+      );
+      const next = { ...this.state, accounts };
+      await this.persist(next);
+      this.state = next;
+      return current.id;
+    });
+  }
+
+  deletingAccountIds(): string[] {
+    return this.state.accounts
+      .filter((account) => account.deleting)
+      .map((account) => account.id);
+  }
+
+  async completeDeletion(accountId: string): Promise<void> {
+    await this.serial(async () => {
+      const account = this.state.accounts.find((item) => item.id === accountId);
+      if (!account) return;
+      if (!account.deleting || this.inFlight.has(accountId))
+        throw new AuthError(409, "账号尚未进入可完成的删除状态");
+      const today = dayKey();
+      const worldAttemptCarry = {
+        day: today,
+        count:
+          (this.state.worldAttemptCarry?.day === today
+            ? this.state.worldAttemptCarry.count
+            : 0) + this.attemptsToday(account, today),
+      };
+      const sessions = Object.fromEntries(
+        Object.entries(this.state.sessions).filter(
+          ([, session]) => session.accountId !== accountId,
+        ),
+      );
+      const next = {
+        ...this.state,
+        accounts: this.state.accounts.filter((item) => item.id !== accountId),
+        sessions,
+        worldAttemptCarry,
+      };
+      await this.persist(next);
+      this.state = next;
+    });
+  }
+
   async withMessagePermit<T>(
     accountId: string,
     action: () => Promise<T>,
@@ -211,7 +291,8 @@ export class AuthStore {
         const account = this.state.accounts.find(
           (item) => item.id === accountId,
         );
-        if (!account) throw new AuthError(401, "登录状态已失效");
+        if (!account || account.deleting)
+          throw new AuthError(401, "登录状态已失效");
         if (
           account.usageDay === today &&
           account.usageCount >= USER_DAILY_LIMIT
@@ -220,10 +301,14 @@ export class AuthStore {
         const attempts = this.attemptsToday(account, today);
         if (attempts >= USER_DAILY_ATTEMPT_LIMIT)
           throw new AuthError(429, "今天的唤醒尝试次数已用完，明天再来吧");
-        const worldAttempts = this.state.accounts.reduce(
-          (sum, item) => sum + this.attemptsToday(item, today),
-          0,
-        );
+        const worldAttempts =
+          (this.state.worldAttemptCarry?.day === today
+            ? this.state.worldAttemptCarry.count
+            : 0) +
+          this.state.accounts.reduce(
+            (sum, item) => sum + this.attemptsToday(item, today),
+            0,
+          );
         if (worldAttempts >= WORLD_DAILY_LIMIT)
           throw new AuthError(429, "星球今天需要休息，明天会再次开放");
         const accounts = this.state.accounts.map((item) =>

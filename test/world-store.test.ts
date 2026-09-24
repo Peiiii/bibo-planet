@@ -156,3 +156,73 @@ test("existing worlds never silently recreate missing spirit state", async () =>
     await rm(dir, { recursive: true, force: true });
   }
 });
+
+test("suppressed visitor memories stay out of model recall and are removed without refunding energy", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "bibo-visitor-removal-test-"));
+  try {
+    const store = new WorldStore(dir);
+    await store.initialize();
+    for (const spiritId of ["mori", "piko", "sela"] as const) {
+      await store.recordTurn({
+        spiritId,
+        visitorId: "alice",
+        message: "只属于 alice 的蓝色风铃",
+        reply: "精灵记下蓝色风铃。",
+        spent: 25,
+        usageKind: "reported",
+      });
+      await store.recordTurn({
+        spiritId,
+        visitorId: "bob",
+        message: "bob 留下一颗普通石头",
+        reply: "石头还在。",
+        spent: 20,
+        usageKind: "reported",
+      });
+    }
+    const energyBefore = store.world().spirits.map(({ energy }) => energy);
+    store.suppressVisitor("alice");
+    for (const spiritId of ["mori", "piko", "sela"] as const) {
+      assert.equal(store.recentEncounters(spiritId).length, 1);
+      assert.equal(store.recentEncounters(spiritId)[0]?.visitorId, "bob");
+      assert.equal(store.conversation(spiritId, "alice").length, 0);
+      assert.equal(
+        store.world().spirits.find(({ id }) => id === spiritId)?.encounters,
+        1,
+      );
+    }
+    assert.deepEqual(
+      store
+        .visitorData("alice")
+        .map(({ sharedEncounters }) => sharedEncounters.length),
+      [0, 0, 0],
+    );
+    await assert.rejects(
+      store.recordTurn({
+        spiritId: "mori",
+        visitorId: "alice",
+        message: "不能重新写入",
+        reply: "不能重新回复",
+        spent: 1,
+        usageKind: "reported",
+      }),
+      /正在删除/,
+    );
+    await store.removeVisitorData("alice");
+    await store.removeVisitorData("alice");
+    assert.deepEqual(
+      store.world().spirits.map(({ energy }) => energy),
+      energyBefore,
+    );
+    const restarted = new WorldStore(dir);
+    await restarted.initialize(true);
+    for (const spiritId of ["mori", "piko", "sela"] as const) {
+      assert.equal(restarted.conversation(spiritId, "alice").length, 0);
+      assert.equal(restarted.conversation(spiritId, "bob").length, 2);
+      assert.equal(restarted.recentEncounters(spiritId).length, 1);
+      assert.equal(restarted.recentEncounters(spiritId)[0]?.visitorId, "bob");
+    }
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});

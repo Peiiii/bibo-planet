@@ -167,6 +167,77 @@ test("same-account concurrency cannot reserve twice while a model call is in fli
   }
 });
 
+test("account deletion requires password, waits for active calls, and freezes every session", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "bibo-delete-auth-test-"));
+  try {
+    const auth = new AuthStore(dir);
+    await auth.initialize();
+    const first = await auth.register(
+      "删除旅人",
+      "ten-characters-or-more",
+      "203.0.113.70",
+    );
+    const second = await auth.login(
+      "删除旅人",
+      "ten-characters-or-more",
+      "203.0.113.71",
+    );
+    await assert.rejects(
+      auth.beginDeletion(first.token, "wrong-password"),
+      /密码不正确/,
+    );
+    await assert.rejects(
+      auth.beginDeletion("unknown", "ten-characters-or-more"),
+      /登录状态已失效/,
+    );
+    let finish!: () => void;
+    const pending = new Promise<void>((resolve) => {
+      finish = resolve;
+    });
+    const inFlight = auth.withMessagePermit(first.account.id, () => pending);
+    await assert.rejects(
+      auth.beginDeletion(first.token, "ten-characters-or-more"),
+      /上一条消息/,
+    );
+    finish();
+    await inFlight;
+    assert.equal(
+      await auth.beginDeletion(first.token, "ten-characters-or-more"),
+      first.account.id,
+    );
+    assert.equal(auth.account(first.token), null);
+    assert.equal(auth.account(second.token), null);
+    assert.deepEqual(auth.deletingAccountIds(), [first.account.id]);
+    await assert.rejects(
+      auth.login("删除旅人", "ten-characters-or-more", "203.0.113.72"),
+      /昵称或密码不正确/,
+    );
+    await assert.rejects(
+      auth.withMessagePermit(first.account.id, async () => undefined),
+      /登录状态已失效/,
+    );
+    await auth.completeDeletion(first.account.id);
+    await auth.completeDeletion(first.account.id);
+    assert.deepEqual(auth.deletingAccountIds(), []);
+    const replacement = await auth.register(
+      "删除旅人",
+      "ten-characters-or-more",
+      "203.0.113.73",
+    );
+    assert.notEqual(replacement.account.id, first.account.id);
+    const restarted = new AuthStore(dir);
+    await restarted.initialize();
+    assert.equal(restarted.account(first.token), null);
+    assert.equal(restarted.account(second.token), null);
+    assert.equal(
+      restarted.account(replacement.token)?.id,
+      replacement.account.id,
+    );
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
 test("world attempt reservations stop at 240 across accounts", async () => {
   const dir = await mkdtemp(join(tmpdir(), "bibo-world-budget-test-"));
   try {
@@ -210,6 +281,13 @@ test("world attempt reservations stop at 240 across accounts", async () => {
       1,
     );
     assert.equal(calls, 240);
+    const deleted = await auth.login(
+      "额度旅人0",
+      "ten-characters-or-more",
+      "203.0.113.90",
+    );
+    await auth.beginDeletion(deleted.token, "ten-characters-or-more");
+    await auth.completeDeletion(deleted.account.id);
     const restarted = new AuthStore(dir);
     await restarted.initialize();
     const extra = await restarted.register(

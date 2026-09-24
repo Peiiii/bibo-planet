@@ -39,6 +39,7 @@ export class EnergyExhaustedError extends Error {
 export class WorldStore {
   private readonly states = new Map<SpiritId, SpiritState>();
   private readonly queues = new Map<SpiritId, Promise<unknown>>();
+  private readonly suppressedVisitors = new Set<string>();
 
   constructor(readonly dataDir: string) {}
 
@@ -87,6 +88,7 @@ export class WorldStore {
     return {
       spirits: SPIRITS.map((spirit): SpiritView => {
         const state = this.requireState(spirit.id);
+        const encounters = this.visibleEncounters(spirit.id);
         return {
           id: spirit.id,
           name: spirit.name,
@@ -95,24 +97,24 @@ export class WorldStore {
           color: spirit.color,
           symbol: spirit.symbol,
           energy: state.energy,
-          encounters: state.encounters.length,
-          lastEncounterAt: state.encounters.at(-1)?.createdAt ?? null,
+          encounters: encounters.length,
+          lastEncounterAt: encounters.at(-1)?.createdAt ?? null,
         };
       }),
     };
   }
 
   conversation(spiritId: SpiritId, visitorId: string): ChatMessage[] {
+    if (this.suppressedVisitors.has(visitorId)) return [];
     return [...(this.requireState(spiritId).conversations[visitorId] ?? [])];
   }
 
   visitorData(visitorId: string) {
     return SPIRITS.map((spirit) => {
-      const state = this.requireState(spirit.id);
       return {
         spirit: { id: spirit.id, name: spirit.name },
         messages: this.conversation(spirit.id, visitorId),
-        sharedEncounters: state.encounters
+        sharedEncounters: this.visibleEncounters(spirit.id)
           .filter((encounter) => encounter.visitorId === visitorId)
           .map(({ visitorId: _visitorId, ...encounter }) => encounter),
       };
@@ -130,6 +132,7 @@ export class WorldStore {
     usageKind: UsageKind;
     replayed: true;
   } | null {
+    if (this.suppressedVisitors.has(visitorId)) return null;
     const state = this.requireState(spiritId);
     const messages = state.conversations[visitorId] ?? [];
     const index = messages.findIndex(
@@ -157,7 +160,7 @@ export class WorldStore {
   }
 
   recentEncounters(spiritId: SpiritId, limit = 8): Encounter[] {
-    return this.requireState(spiritId).encounters.slice(-limit);
+    return this.visibleEncounters(spiritId).slice(-limit);
   }
 
   relevantOlderEncounters = (
@@ -166,7 +169,7 @@ export class WorldStore {
   ): Encounter[] => {
     const cues = this.recallCues(query);
     if (cues.length === 0) return [];
-    const older = this.requireState(spiritId).encounters.slice(0, -10);
+    const older = this.visibleEncounters(spiritId).slice(0, -10);
     return older
       .map((encounter, index) => {
         const text =
@@ -224,6 +227,8 @@ export class WorldStore {
   }): Promise<{ reply: ChatMessage; energy: number }> {
     const { spiritId, visitorId, message, reply, spent, usageKind, requestId } =
       input;
+    if (this.suppressedVisitors.has(visitorId))
+      throw new Error("正在删除的旅人不能留下新记录");
     if (!Number.isSafeInteger(spent) || spent < 1)
       throw new Error("无效的能量消耗");
     const old = this.requireState(spiritId);
@@ -262,6 +267,32 @@ export class WorldStore {
     return { reply: spiritMessage, energy: next.energy };
   }
 
+  suppressVisitor(visitorId: string): void {
+    this.suppressedVisitors.add(visitorId);
+  }
+
+  async removeVisitorData(visitorId: string): Promise<void> {
+    this.suppressVisitor(visitorId);
+    for (const spirit of SPIRITS) {
+      await this.withSpiritLock(spirit.id, async () => {
+        const old = this.requireState(spirit.id);
+        const encounters = old.encounters.filter(
+          (encounter) => encounter.visitorId !== visitorId,
+        );
+        if (
+          encounters.length === old.encounters.length &&
+          !Object.hasOwn(old.conversations, visitorId)
+        )
+          return;
+        const conversations = { ...old.conversations };
+        delete conversations[visitorId];
+        const next = { ...old, encounters, conversations };
+        await this.persist(spirit.id, next);
+        this.states.set(spirit.id, next);
+      });
+    }
+  }
+
   async credit(spiritId: SpiritId, amount: number): Promise<number> {
     if (!Number.isSafeInteger(amount) || amount < 1)
       throw new Error("补充数量必须为正整数");
@@ -280,6 +311,12 @@ export class WorldStore {
     if (!state || !findSpirit(spiritId))
       throw new Error(`未知精灵：${spiritId}`);
     return state;
+  }
+
+  private visibleEncounters(spiritId: SpiritId): Encounter[] {
+    return this.requireState(spiritId).encounters.filter(
+      (encounter) => !this.suppressedVisitors.has(encounter.visitorId),
+    );
   }
 
   private statePath(spiritId: SpiritId): string {
