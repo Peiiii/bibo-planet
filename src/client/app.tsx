@@ -50,7 +50,7 @@ class ApiError extends Error {
 type Account = { id: string; name: string; remainingToday: number };
 
 const sharedMemoryNotice =
-  "你发送的内容可能进入共享上下文，影响 AI 对其他用户的回答。请勿输入隐私或秘密。";
+  "你发送的内容可能进入共同上下文或 AI 的共享文件，其他用户可能间接获知。请勿输入隐私或秘密。";
 
 function handleDialogKeys(
   event: KeyboardEvent<HTMLElement>,
@@ -639,7 +639,8 @@ export function App() {
             ))}
           </div>
           <p className="world-footnote">
-            每个 AI 都由不同用户共同使用，不是你的专属会话机器人。
+            每个 AI
+            都由不同用户共同使用，也能整理自己的共享文本文件。试着问它：「当前目录有哪些文件？」
           </p>
         </section>
 
@@ -718,7 +719,7 @@ export function App() {
                 </p>
                 <span>
                   {account
-                    ? "输入一个真实问题，直接开始。"
+                    ? "输入真实问题，或问它：当前目录有哪些文件？"
                     : "注册后可以继续自己的对话。"}
                 </span>
               </div>

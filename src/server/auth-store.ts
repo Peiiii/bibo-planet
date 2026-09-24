@@ -281,10 +281,11 @@ export class AuthStore {
     });
   }
 
-  async markDeletingFromLedger(accountId: string): Promise<void> {
-    await this.serial(async () => {
+  async markDeletingFromLedger(accountId: string): Promise<boolean> {
+    return await this.serial(async () => {
       const account = this.state.accounts.find((item) => item.id === accountId);
-      if (!account || account.deleting) return;
+      if (!account) return false;
+      if (account.deleting) return true;
       if (this.inFlight.has(accountId))
         throw new AuthError(409, "账号仍有正在生成的消息");
       const accounts = this.state.accounts.map((item) =>
@@ -293,6 +294,7 @@ export class AuthStore {
       const next = { ...this.state, accounts };
       await this.persist(next);
       this.state = next;
+      return true;
     });
   }
 

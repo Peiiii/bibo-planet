@@ -158,6 +158,7 @@ test("each shared AI keeps only its own bounded notes, and deletion clears all n
     const restarted = new WorldStore(dir);
     await restarted.initialize(true);
     assert.equal(await restarted.readMemory("piko"), "普通石头");
+    await restarted.scrubSharedContentForDeletion("a".repeat(64));
     await restarted.removeVisitorData("any-visitor");
     for (const spirit of ["mori", "piko", "sela"] as const)
       assert.equal(await restarted.readMemory(spirit), "");

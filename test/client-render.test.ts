@@ -13,8 +13,9 @@ import {
 test("conversation identifies shared AI and discloses cross-user context", () => {
   const html = renderToStaticMarkup(createElement(App));
   assert.match(html, /共享 AI · 回复由模型生成/);
-  assert.match(html, /你发送的内容可能进入共享上下文/);
-  assert.match(html, /影响 AI 对其他用户的回答/);
+  assert.match(html, /你发送的内容可能进入共同上下文或 AI 的共享文件/);
+  assert.match(html, /其他用户可能间接获知/);
+  assert.match(html, /当前目录有哪些文件/);
   assert.doesNotMatch(html, /精灵星球|正在醒来|能量/);
 });
 

@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
@@ -53,6 +53,14 @@ test("a deletion survives interruption and an older account/world snapshot canno
     );
     for (const spiritId of ["mori", "piko", "sela"] as const) {
       await world.replaceMemory(spiritId, `可能来自原旅人的笔记 ${spiritId}`);
+      await mkdir(join(dir, "workspace", "agents", spiritId, "files"), {
+        recursive: true,
+      });
+      await world.files.write(
+        spiritId,
+        "files/shared.txt",
+        `可能来自原旅人的文件 ${spiritId}`,
+      );
       await world.recordTurn({
         spiritId,
         visitorId: alice.account.id,
@@ -77,6 +85,9 @@ test("a deletion survives interruption and an older account/world snapshot canno
       ),
       ...(["mori", "piko", "sela"] as const).map((spiritId) =>
         join(dir, "workspace", "agents", spiritId, "MEMORY.md"),
+      ),
+      ...(["mori", "piko", "sela"] as const).map((spiritId) =>
+        join(dir, "workspace", "agents", spiritId, "files", "shared.txt"),
       ),
     ];
     const oldSnapshot = await Promise.all(
@@ -126,8 +137,33 @@ test("a deletion survives interruption and an older account/world snapshot canno
       new DeletionLedger(join(dir, "deletion-ledger"), remote),
     );
     await restartedDeletion.initialize();
-    for (const spiritId of ["mori", "piko", "sela"] as const)
+    for (const spiritId of ["mori", "piko", "sela"] as const) {
       assert.equal(await restartedWorld.readMemory(spiritId), "");
+      assert.deepEqual(await restartedWorld.files.list(spiritId, "files"), []);
+    }
+    await restartedWorld.files.write(
+      "mori",
+      "files/after-delete.txt",
+      "新的共同内容",
+    );
+    await restartedWorld.replaceMemory("mori", "删除之后的新笔记");
+    const normalRestartWorld = new WorldStore(dir);
+    const normalRestartAuth = new AuthStore(dir);
+    await normalRestartWorld.initialize(true);
+    await normalRestartAuth.initialize(true);
+    await new AccountDeletion(
+      normalRestartAuth,
+      normalRestartWorld,
+      new DeletionLedger(join(dir, "deletion-ledger"), remote),
+    ).initialize();
+    assert.equal(
+      await normalRestartWorld.files.read("mori", "files/after-delete.txt"),
+      "新的共同内容",
+    );
+    assert.equal(
+      await normalRestartWorld.readMemory("mori"),
+      "删除之后的新笔记",
+    );
     assert.deepEqual(restartedAuth.deletingAccountIds(), []);
     assert.equal(restartedAuth.account(alice.token), null);
     assert.equal(restartedAuth.account(bob.token)?.id, bob.account.id);
@@ -139,6 +175,12 @@ test("a deletion survives interruption and an older account/world snapshot canno
     for (const [index, path] of snapshotPaths.entries()) {
       await writeFile(path, oldSnapshot[index]!);
     }
+    await rm(
+      join(dir, "workspace", "agents", "mori", "files", "after-delete.txt"),
+      { force: true },
+    );
+    // Overlay an old backup while the newer scrub marker remains on disk.
+    // Restored account state must force a fresh scrub despite the marker.
     await rm(join(dir, "deletion-ledger"), { recursive: true, force: true });
     const restoredAuth = new AuthStore(dir);
     const restoredWorld = new WorldStore(dir);
@@ -150,8 +192,10 @@ test("a deletion survives interruption and an older account/world snapshot canno
       new DeletionLedger(join(dir, "deletion-ledger"), remote),
     );
     await restoredDeletion.initialize();
-    for (const spiritId of ["mori", "piko", "sela"] as const)
+    for (const spiritId of ["mori", "piko", "sela"] as const) {
       assert.equal(await restoredWorld.readMemory(spiritId), "");
+      assert.deepEqual(await restoredWorld.files.list(spiritId, "files"), []);
+    }
     assert.equal(restoredAuth.account(alice.token), null);
     assert.equal(restoredAuth.account(bob.token)?.id, bob.account.id);
     for (const spiritId of ["mori", "piko", "sela"] as const) {

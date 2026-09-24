@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { lstat, mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import { SpiritFiles } from "./spirit-files.ts";
 import {
   INITIAL_ENERGY,
   MIN_WAKE_ENERGY,
@@ -41,7 +42,11 @@ export class WorldStore {
   private readonly queues = new Map<SpiritId, Promise<unknown>>();
   private readonly suppressedVisitors = new Set<string>();
 
-  constructor(readonly dataDir: string) {}
+  readonly files: SpiritFiles;
+
+  constructor(readonly dataDir: string) {
+    this.files = new SpiritFiles(dataDir);
+  }
 
   async initialize(requireExisting = false): Promise<void> {
     const saved = await Promise.all(
@@ -271,8 +276,6 @@ export class WorldStore {
     this.suppressVisitor(visitorId);
     for (const spirit of SPIRITS) {
       await this.withSpiritLock(spirit.id, async () => {
-        // Shared notes may contain this visitor's words without attribution.
-        await this.replaceMemory(spirit.id, "");
         const old = this.requireState(spirit.id);
         const encounters = old.encounters.filter(
           (encounter) => encounter.visitorId !== visitorId,
@@ -289,6 +292,47 @@ export class WorldStore {
         this.states.set(spirit.id, next);
       });
     }
+  }
+
+  async scrubSharedContentForDeletion(
+    fingerprint: string,
+    restoredAccountPresent = false,
+  ): Promise<void> {
+    if (!/^[0-9a-f]{64}$/.test(fingerprint))
+      throw new Error("无效的删除记录指纹");
+    const directory = join(this.dataDir, "workspace", "agents");
+    const path = join(directory, ".deletion-scrub.json");
+    let applied: string | undefined;
+    try {
+      if (!(await lstat(path)).isFile())
+        throw new Error("删除清理标记不是普通文件");
+      const parsed = JSON.parse(await readFile(path, "utf8")) as {
+        version?: unknown;
+        fingerprint?: unknown;
+      };
+      if (parsed?.version === 1 && typeof parsed.fingerprint === "string")
+        applied = parsed.fingerprint;
+    } catch (error) {
+      if (
+        (error as NodeJS.ErrnoException).code !== "ENOENT" &&
+        !(error instanceof SyntaxError)
+      )
+        throw error;
+    }
+    if (applied === fingerprint && !restoredAccountPresent) return;
+    for (const spirit of SPIRITS) {
+      await this.withSpiritLock(spirit.id, async () => {
+        // These shared contents cannot be safely attributed to one visitor.
+        await this.files.clearSharedFiles(spirit.id);
+        await this.replaceMemory(spirit.id, "");
+      });
+    }
+    await mkdir(directory, { recursive: true, mode: 0o700 });
+    const temporary = `${path}.${randomUUID()}.tmp`;
+    await writeFile(temporary, JSON.stringify({ version: 1, fingerprint }), {
+      mode: 0o600,
+    });
+    await rename(temporary, path);
   }
 
   async readMemory(spiritId: SpiritId): Promise<string> {

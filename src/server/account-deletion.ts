@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { AuthStore } from "./auth-store.ts";
 import { DeletionLedger } from "./deletion-ledger.ts";
 import { WorldStore } from "./world-store.ts";
@@ -22,9 +23,17 @@ export class AccountDeletion {
       ...this.auth.deletingAccountIds(),
     ]);
     for (const id of ids) this.world.suppressVisitor(id);
+    for (const id of ids) await this.ledger.record(id);
+    let restoredAccountPresent = false;
+    for (const id of ids)
+      restoredAccountPresent =
+        (await this.auth.markDeletingFromLedger(id)) || restoredAccountPresent;
+    if (ids.size > 0)
+      await this.world.scrubSharedContentForDeletion(
+        this.deletionFingerprint(),
+        restoredAccountPresent,
+      );
     for (const id of ids) {
-      await this.ledger.record(id);
-      await this.auth.markDeletingFromLedger(id);
       await this.world.removeVisitorData(id);
       await this.auth.completeDeletion(id);
     }
@@ -36,10 +45,21 @@ export class AccountDeletion {
     });
     try {
       await this.ledger.record(accountId);
+      await this.world.scrubSharedContentForDeletion(
+        this.deletionFingerprint(),
+      );
       await this.world.removeVisitorData(accountId);
       await this.auth.completeDeletion(accountId);
     } catch (cause) {
       throw new DeletionPendingError({ cause });
     }
+  }
+
+  private deletionFingerprint(): string {
+    const records = this.ledger
+      .list()
+      .map(({ accountId, createdAt }) => `${accountId}:${createdAt}`)
+      .sort();
+    return createHash("sha256").update(records.join("\n")).digest("hex");
   }
 }
