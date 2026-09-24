@@ -72,3 +72,54 @@ test("registered accounts isolate conversation lists, while both visitors can wa
     await rm(dir, { recursive: true, force: true });
   }
 });
+
+test("model failure returns an error without recording a turn or spending quota", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "bibo-model-failure-test-"));
+  const store = new WorldStore(dir);
+  await store.initialize();
+  const auth = new AuthStore(dir);
+  await auth.initialize();
+  const runtime = new SpiritRuntime(store, async () => {
+    throw new Error("model request failed (401)");
+  });
+  const server = createWorldServer(store, runtime, auth);
+  try {
+    await new Promise<void>((resolve) =>
+      server.listen(0, "127.0.0.1", resolve),
+    );
+    const address = server.address();
+    if (!address || typeof address === "string")
+      throw new Error("server address unavailable");
+    const base = `http://127.0.0.1:${address.port}`;
+    const registered = await fetch(`${base}/api/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: "traveler", password: "longpassword123" }),
+    });
+    assert.equal(registered.status, 200);
+    const cookie = registered.headers.get("set-cookie")!.split(";")[0]!;
+    const energyBefore = store.world().spirits[0]!.energy;
+    const sent = await fetch(`${base}/api/spirits/mori/messages`, {
+      method: "POST",
+      headers: { Cookie: cookie, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        message: "你好",
+        requestId: "7de4f7ee-937d-4bbb-b89b-1ee95f72edc3",
+      }),
+    });
+    assert.equal(sent.status, 502);
+    assert.deepEqual(await sent.json(), {
+      error: "模型凭据无效，精灵暂时无法回应。",
+    });
+    const conversation = await fetch(`${base}/api/spirits/mori/conversation`, {
+      headers: { Cookie: cookie },
+    });
+    assert.deepEqual(await conversation.json(), { messages: [] });
+    assert.equal(store.world().spirits[0]!.energy, energyBefore);
+    assert.equal(store.world().spirits[0]!.encounters, 0);
+    assert.equal(auth.account(cookie.split("=")[1])?.remainingToday, 12);
+  } finally {
+    await new Promise<void>((resolve) => server.close(() => resolve()));
+    await rm(dir, { recursive: true, force: true });
+  }
+});

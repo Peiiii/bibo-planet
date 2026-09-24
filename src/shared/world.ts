@@ -54,6 +54,7 @@ export type SpiritView = {
   symbol: string;
   energy: number;
   encounters: number;
+  lastEncounterAt: string | null;
 };
 
 export type WorldView = { spirits: SpiritView[] };

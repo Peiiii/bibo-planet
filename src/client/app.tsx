@@ -27,6 +27,18 @@ async function api<T>(path: string, options?: RequestInit): Promise<T> {
 
 type Account = { id: string; name: string; remainingToday: number };
 
+function activityLabel(lastEncounterAt: string | null): string {
+  if (!lastEncounterAt) return "等待第一次相遇";
+  const minutes = Math.floor(
+    (Date.now() - Date.parse(lastEncounterAt)) / 60_000,
+  );
+  if (!Number.isFinite(minutes)) return "曾有旅人来过";
+  if (minutes < 1) return "刚刚有人来过";
+  if (minutes < 60) return `${minutes} 分钟前有人来过`;
+  if (minutes < 1_440) return `${Math.floor(minutes / 60)} 小时前有人来过`;
+  return `${Math.floor(minutes / 1_440)} 天前有人来过`;
+}
+
 export function App() {
   const [spirits, setSpirits] = useState<SpiritView[]>([]);
   const [selectedId, setSelectedId] = useState<SpiritId>("mori");
@@ -35,6 +47,7 @@ export function App() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [worldError, setWorldError] = useState("");
   const [lastSpent, setLastSpent] = useState<{
     count: number;
     estimated: boolean;
@@ -57,12 +70,38 @@ export function App() {
   const selected = spirits.find((spirit) => spirit.id === selectedId);
 
   useEffect(() => {
-    void api<WorldView>("/api/world")
-      .then((world) => setSpirits(world.spirits))
-      .catch((cause: unknown) =>
-        setError(cause instanceof Error ? cause.message : "星球暂时无法连接"),
-      )
-      .finally(() => setLoading(false));
+    let active = true;
+    let refreshing = false;
+    function refresh(first = false) {
+      if (!active || refreshing || (!first && document.hidden)) return;
+      refreshing = true;
+      void api<WorldView>("/api/world")
+        .then((world) => {
+          if (active) {
+            setSpirits(world.spirits);
+            setWorldError("");
+          }
+        })
+        .catch((cause: unknown) => {
+          if (active && first)
+            setWorldError(
+              cause instanceof Error ? cause.message : "星球暂时无法连接",
+            );
+        })
+        .finally(() => {
+          refreshing = false;
+          if (active && first) setLoading(false);
+        });
+    }
+    refresh(true);
+    const interval = window.setInterval(() => refresh(), 30_000);
+    const onVisible = () => refresh();
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      active = false;
+      window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
   }, []);
 
   useEffect(() => {
@@ -136,6 +175,7 @@ export function App() {
                 ...spirit,
                 energy: result.energy,
                 encounters: spirit.encounters + 1,
+                lastEncounterAt: new Date().toISOString(),
               }
             : spirit,
         ),
@@ -274,6 +314,9 @@ export function App() {
                 <span className="spirit-label">
                   <strong>{spirit.name}</strong>
                   <small>{spirit.title}</small>
+                  <span className="spirit-activity">
+                    {activityLabel(spirit.lastEncounterAt)}
+                  </span>
                 </span>
                 <span className="card-arrow">↗</span>
               </button>
@@ -372,9 +415,9 @@ export function App() {
                 今天还能唤醒 {account.remainingToday} 次 · 所有旅人共享这颗星球
               </p>
             )}
-            {error && (
+            {(error || worldError) && (
               <p className="error-note" role="alert">
-                {error}
+                {error || worldError}
               </p>
             )}
             {selected && selected.energy < MIN_WAKE_ENERGY && (

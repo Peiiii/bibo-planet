@@ -337,6 +337,23 @@ a {
   font-size: 10px;
   color: #9ea5b4;
 }
+.spirit-activity {
+  color: #c9b4a4;
+  font-size: 10px;
+  line-height: 1.4;
+  margin-top: 3px;
+}
+.spirit-activity:before {
+  content: "";
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  margin-right: 6px;
+  vertical-align: 2px;
+  border-radius: 50%;
+  background: #b8d2c4;
+  box-shadow: 0 0 7px #b8d2c47a;
+}
 .card-arrow {
   position: absolute;
   right: 16px;

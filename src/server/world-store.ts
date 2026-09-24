@@ -81,6 +81,7 @@ export class WorldStore {
           symbol: spirit.symbol,
           energy: state.energy,
           encounters: state.encounters.length,
+          lastEncounterAt: state.encounters.at(-1)?.createdAt ?? null,
         };
       }),
     };

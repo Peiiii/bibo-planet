@@ -13,6 +13,7 @@ test("shared encounters persist while raw conversations remain visitor-specific"
     const store = new WorldStore(dir);
     await store.initialize();
     assert.equal(store.world().spirits.length, 3);
+    assert.equal(store.world().spirits[0]?.lastEncounterAt, null);
     assert.equal(store.energy("mori"), INITIAL_ENERGY);
     await store.recordTurn({
       spiritId: "mori",
@@ -31,12 +32,20 @@ test("shared encounters persist while raw conversations remain visitor-specific"
     );
     assert.equal(store.recentEncounters("mori")[0]?.spent, 23);
     assert.equal(store.recentEncounters("mori")[0]?.usageKind, "reported");
+    assert.equal(
+      store.world().spirits[0]?.lastEncounterAt,
+      store.recentEncounters("mori")[0]?.createdAt,
+    );
     assert.equal(store.recentEncounters("piko").length, 0);
     const restarted = new WorldStore(dir);
     await restarted.initialize();
     assert.equal(restarted.energy("mori"), INITIAL_ENERGY - 23);
     assert.equal(restarted.conversation("mori", "alice").length, 2);
     assert.equal(restarted.recentEncounters("mori").length, 1);
+    assert.equal(
+      restarted.world().spirits[0]?.lastEncounterAt,
+      store.world().spirits[0]?.lastEncounterAt,
+    );
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
