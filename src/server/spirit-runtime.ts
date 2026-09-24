@@ -45,16 +45,15 @@ export class SpiritRuntime {
     chat?: ModelChat,
   ) {
     this.chat = chat ?? null;
-    this.model = process.env.BIBO_MODEL?.trim() || "deepseek/deepseek-chat";
+    this.model = process.env.BIBO_MODEL?.trim() || "deepseek/deepseek-flash";
   }
 
   get modelDisclosure(): ModelDisclosure {
-    if (this.model === "deepseek/deepseek-chat") {
+    if (this.model === "deepseek/deepseek-flash") {
       return {
-        name: "Deepseek Chat",
-        filingNumber: "Beijing-DeepseekChat-202404280016",
-        sourceUrl:
-          "https://cdn.deepseek.com/policies/zh-CN/model-algorithm-disclosure.html",
+        name: "DeepSeek Flash",
+        filingNumber: null,
+        sourceUrl: "https://api-docs.deepseek.com/quick_start/pricing/",
       };
     }
     return { name: this.model, filingNumber: null, sourceUrl: null };

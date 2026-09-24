@@ -9,13 +9,19 @@ import { WorldStore } from "../src/server/world-store.ts";
 test("model disclosure follows the configured provider instead of claiming a stale filing", () => {
   const previous = process.env.BIBO_MODEL;
   try {
-    process.env.BIBO_MODEL = "deepseek/deepseek-chat";
+    process.env.BIBO_MODEL = "deepseek/deepseek-flash";
     const deepseek = new SpiritRuntime(new WorldStore("unused"));
     assert.deepEqual(deepseek.modelDisclosure, {
-      name: "Deepseek Chat",
-      filingNumber: "Beijing-DeepseekChat-202404280016",
-      sourceUrl:
-        "https://cdn.deepseek.com/policies/zh-CN/model-algorithm-disclosure.html",
+      name: "DeepSeek Flash",
+      filingNumber: null,
+      sourceUrl: "https://api-docs.deepseek.com/quick_start/pricing/",
+    });
+    process.env.BIBO_MODEL = "deepseek/deepseek-chat";
+    const legacy = new SpiritRuntime(new WorldStore("unused"));
+    assert.deepEqual(legacy.modelDisclosure, {
+      name: "deepseek/deepseek-chat",
+      filingNumber: null,
+      sourceUrl: null,
     });
     process.env.BIBO_MODEL = "other/unknown";
     const unknown = new SpiritRuntime(new WorldStore("unused"));

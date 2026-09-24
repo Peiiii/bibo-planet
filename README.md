@@ -10,7 +10,7 @@
 
 这不是 NextClaw 私人助手的界面皮肤。Bibo Planet 独立拥有世界、账号、能量和前端；模型能力由公开的 `@nextclaw/harness` 提供。公网版本不给模型文件、命令或网络工具，所以精灵还不能运行代码、改造自己的界面。完整有工具的 Agent 需要真正的执行隔离后才能开放，不能用提示词或 `restrictToWorkspace` 冒充沙箱。
 
-网页对话区和精灵回复旁会直接标明 AI 生成身份。对话区标题旁还会按当前后端模型显示模型名称、已核实的备案号及来源链接；当前生产使用 DeepSeek 的 `deepseek-chat`，对应其官方公示的 Deepseek Chat 信息。精灵有性格与共同经历，但并非真人；模型备案信息不等于 Bibo Planet 应用自身已完成可能需要的登记。这些提示不替代[正式开放验收](docs/plans/2026-09-24-public-launch.plan.md)中尚未完成的隐私、备案与公开 AI 服务要求。
+网页对话区和精灵回复旁会直接标明 AI 生成身份。对话区标题旁按当前后端模型显示名称与官方资料；未核实的新模型备案号不会借用旧模型的公示信息。精灵有性格与共同经历，但并非真人；模型资料不等于 Bibo Planet 应用自身已完成可能需要的登记。这些提示不替代[正式开放验收](docs/plans/2026-09-24-public-launch.plan.md)中尚未完成的隐私、备案与公开 AI 服务要求。
 
 ## 本地运行
 
@@ -28,7 +28,7 @@ pnpm dev
 本机 NextClaw 已配置可用供应商时，可只引用配置文件，不复制 key：
 
 ```dotenv
-BIBO_MODEL=deepseek/deepseek-chat
+BIBO_MODEL=deepseek/deepseek-flash
 BIBO_NEXTCLAW_CONFIG=/absolute/path/to/.nextclaw/config.json
 ```
 

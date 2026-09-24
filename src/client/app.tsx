@@ -492,7 +492,9 @@ export function App() {
                         target="_blank"
                         rel="noreferrer"
                       >
-                        公示来源 ↗
+                        {modelDisclosure.filingNumber
+                          ? "公示来源 ↗"
+                          : "模型资料 ↗"}
                       </a>
                     </>
                   )}
