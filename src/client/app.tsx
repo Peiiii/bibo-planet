@@ -83,12 +83,26 @@ export function App() {
   const [authError, setAuthError] = useState("");
   const chatScroll = useRef<HTMLDivElement>(null);
   const conversationPanel = useRef<HTMLElement>(null);
+  const authNameInput = useRef<HTMLInputElement>(null);
   const pendingRequest = useRef<{
     id: string;
     message: string;
     spiritId: SpiritId;
   } | null>(null);
   const selected = spirits.find((spirit) => spirit.id === selectedId);
+
+  useEffect(() => {
+    if (!authOpen) return;
+    const previous = document.activeElement;
+    return () => {
+      if (previous instanceof HTMLElement && previous.isConnected)
+        previous.focus();
+    };
+  }, [authOpen]);
+
+  useEffect(() => {
+    if (authOpen) authNameInput.current?.focus();
+  }, [authOpen, authMode]);
 
   useEffect(() => {
     let active = true;
@@ -518,6 +532,28 @@ export function App() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="auth-title"
+            onKeyDown={(event) => {
+              if (event.key === "Escape") {
+                event.preventDefault();
+                setAuthOpen(false);
+              }
+              if (event.key !== "Tab") return;
+              const focusable = Array.from(
+                event.currentTarget.querySelectorAll<HTMLElement>(
+                  "button:not(:disabled), input:not(:disabled)",
+                ),
+              );
+              const first = focusable[0];
+              const last = focusable.at(-1);
+              if (!first || !last) return;
+              if (event.shiftKey && document.activeElement === first) {
+                event.preventDefault();
+                last.focus();
+              } else if (!event.shiftKey && document.activeElement === last) {
+                event.preventDefault();
+                first.focus();
+              }
+            }}
           >
             <button
               type="button"
@@ -540,6 +576,7 @@ export function App() {
               <label htmlFor="auth-name">旅人昵称</label>
               <input
                 id="auth-name"
+                ref={authNameInput}
                 autoComplete="username"
                 value={authName}
                 onChange={(event) => setAuthName(event.target.value)}
