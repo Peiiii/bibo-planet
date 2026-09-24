@@ -844,7 +844,10 @@ export function App() {
                 ref={authNameInput}
                 autoComplete="username"
                 value={authName}
-                onChange={(event) => setAuthName(event.target.value)}
+                onChange={(event) => {
+                  setAuthName(event.target.value);
+                  setAuthError("");
+                }}
                 required
                 minLength={3}
                 maxLength={24}
@@ -858,7 +861,10 @@ export function App() {
                   authMode === "register" ? "new-password" : "current-password"
                 }
                 value={authPassword}
-                onChange={(event) => setAuthPassword(event.target.value)}
+                onChange={(event) => {
+                  setAuthPassword(event.target.value);
+                  setAuthError("");
+                }}
                 required
                 minLength={1}
                 placeholder={
