@@ -48,6 +48,7 @@ export function App() {
   const [authBusy, setAuthBusy] = useState(false);
   const [authError, setAuthError] = useState("");
   const chatScroll = useRef<HTMLDivElement>(null);
+  const conversationPanel = useRef<HTMLElement>(null);
   const pendingRequest = useRef<{
     id: string;
     message: string;
@@ -190,6 +191,13 @@ export function App() {
     }
   }
 
+  function selectSpirit(spiritId: SpiritId) {
+    setSelectedId(spiritId);
+    if (window.matchMedia("(max-width: 750px)").matches) {
+      conversationPanel.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }
+
   return (
     <main className="shell">
       <header className="topbar">
@@ -256,7 +264,7 @@ export function App() {
                 type="button"
                 key={spirit.id}
                 className={`spirit-card ${spirit.color} ${selectedId === spirit.id ? "selected" : ""}`}
-                onClick={() => setSelectedId(spirit.id)}
+                onClick={() => selectSpirit(spirit.id)}
                 disabled={busy}
               >
                 <span className="spirit-number">0{index + 1}</span>
@@ -276,7 +284,11 @@ export function App() {
           </p>
         </section>
 
-        <section className="conversation-panel" aria-label="与精灵交谈">
+        <section
+          className="conversation-panel"
+          aria-label="与精灵交谈"
+          ref={conversationPanel}
+        >
           <div className="conversation-header">
             <div>
               <p className="eyebrow">AN OPEN CONVERSATION</p>
@@ -480,6 +492,11 @@ export function App() {
                   authMode === "register" ? "至少 10 个字符" : "输入密码"
                 }
               />
+              {authMode === "register" && (
+                <p className="auth-password-note">
+                  目前无法找回密码，请妥善保存。
+                </p>
+              )}
               {authError && (
                 <p className="error-note" role="alert">
                   {authError}
