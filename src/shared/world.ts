@@ -58,6 +58,29 @@ export type SpiritView = {
 };
 
 export type WorldView = { spirits: SpiritView[] };
+export type PersonalDataArchive = {
+  format: "bibo-planet-personal-data-v1";
+  exportedAt: string;
+  account: {
+    id: string;
+    name: string;
+    createdAt: string;
+    usageDay: string;
+    usageCount: number;
+  };
+  spirits: Array<{
+    spirit: { id: SpiritId; name: string };
+    messages: ChatMessage[];
+    sharedEncounters: Array<{
+      requestId?: string;
+      message: string;
+      reply: string;
+      createdAt: string;
+      spent?: number;
+      usageKind?: UsageKind;
+    }>;
+  }>;
+};
 export type ChatResponse = {
   reply: ChatMessage;
   energy: number;

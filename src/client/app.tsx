@@ -4,6 +4,7 @@ import {
   MIN_WAKE_ENERGY,
   type ChatMessage,
   type ChatResponse,
+  type PersonalDataArchive,
   type SpiritId,
   type SpiritView,
   type WorldView,
@@ -272,38 +273,25 @@ export function App() {
     }
   }
 
-  async function exportConversations() {
+  async function exportPersonalData() {
     if (!account || exporting) return;
+    if (
+      !window.confirm(
+        "导出的文件包含你的私人对话，请只保存到安全的位置。继续导出吗？",
+      )
+    )
+      return;
     setExporting(true);
     setError("");
     try {
-      const world = await api<WorldView>("/api/world");
-      if (world.spirits.length === 0)
-        throw new Error("暂时没有可导出的精灵对话");
-      const conversations = await Promise.all(
-        world.spirits.map(async (spirit) => ({
-          spirit: { id: spirit.id, name: spirit.name },
-          messages: (
-            await api<{ messages: ChatMessage[] }>(
-              `/api/spirits/${spirit.id}/conversation`,
-            )
-          ).messages,
-        })),
-      );
-      const exportedAt = new Date().toISOString();
-      const archive = {
-        format: "bibo-planet-conversations-v1",
-        exportedAt,
-        account: { id: account.id, name: account.name },
-        conversations,
-      };
+      const archive = await api<PersonalDataArchive>("/api/account/data");
       const blob = new Blob([JSON.stringify(archive, null, 2)], {
         type: "application/json;charset=utf-8",
       });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `bibo-planet-conversations-${exportedAt.slice(0, 10)}.json`;
+      link.download = `bibo-planet-my-data-${archive.exportedAt.slice(0, 10)}.json`;
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -345,10 +333,11 @@ export function App() {
               <span>旅人 · {account.name}</span>
               <button
                 type="button"
-                onClick={() => void exportConversations()}
+                onClick={() => void exportPersonalData()}
                 disabled={exporting}
+                title="文件含你的私人对话，请妥善保存"
               >
-                {exporting ? "准备中…" : "导出对话"}
+                {exporting ? "准备中…" : "导出我的数据"}
               </button>
               <button
                 type="button"

@@ -8,7 +8,11 @@ import {
 import { readFile } from "node:fs/promises";
 import { extname, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
-import { findSpirit, type SpiritId } from "../shared/world.ts";
+import {
+  findSpirit,
+  type PersonalDataArchive,
+  type SpiritId,
+} from "../shared/world.ts";
 import { AuthError, AuthStore } from "./auth-store.ts";
 import { EnergyExhaustedError, WorldStore } from "./world-store.ts";
 import type { SpiritRuntime } from "./spirit-runtime.ts";
@@ -45,6 +49,17 @@ export function createWorldServer(
       }
       if (request.method === "GET" && url.pathname === "/api/session") {
         sendJson(response, 200, { account });
+        return;
+      }
+      if (request.method === "GET" && url.pathname === "/api/account/data") {
+        if (!account) throw new AuthError(401, "请先登录，再导出你的数据");
+        const archive: PersonalDataArchive = {
+          format: "bibo-planet-personal-data-v1",
+          exportedAt: new Date().toISOString(),
+          account: auth.accountData(account.id),
+          spirits: store.visitorData(account.id),
+        };
+        sendJson(response, 200, archive);
         return;
       }
       if (

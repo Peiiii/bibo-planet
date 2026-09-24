@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { randomUUID } from "node:crypto";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -122,6 +123,117 @@ test("model failure returns an error without recording a turn or spending quota"
     assert.equal(store.world().spirits[0]!.energy, energyBefore);
     assert.equal(store.world().spirits[0]!.encounters, 0);
     assert.equal(auth.account(cookie.split("=")[1])?.remainingToday, 12);
+  } finally {
+    await new Promise<void>((resolve) => server.close(() => resolve()));
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("personal data export uses only the cookie identity and excludes other travelers and credentials", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "bibo-export-test-"));
+  const store = new WorldStore(dir);
+  await store.initialize();
+  const auth = new AuthStore(dir);
+  await auth.initialize();
+  const runtime = new SpiritRuntime(store, async () => ({
+    content: "精灵回应。",
+    toolCalls: [],
+    finishReason: "stop",
+    usage: { totalTokens: 31 },
+  }));
+  const server = createWorldServer(store, runtime, auth);
+  try {
+    await new Promise<void>((resolve) =>
+      server.listen(0, "127.0.0.1", resolve),
+    );
+    const address = server.address();
+    if (!address || typeof address === "string")
+      throw new Error("server address unavailable");
+    const base = `http://127.0.0.1:${address.port}`;
+    const register = async (name: string) => {
+      const response = await fetch(`${base}/api/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, password: "longpassword123" }),
+      });
+      assert.equal(response.status, 200);
+      const account = (await response.json()) as {
+        account: { id: string; name: string };
+      };
+      return {
+        account: account.account,
+        cookie: response.headers.get("set-cookie")!.split(";")[0]!,
+      };
+    };
+    const alice = await register("alice");
+    const bobby = await register("bobby");
+    const send = async (cookie: string, spirit: string, message: string) => {
+      const response = await fetch(`${base}/api/spirits/${spirit}/messages`, {
+        method: "POST",
+        headers: { Cookie: cookie, "Content-Type": "application/json" },
+        body: JSON.stringify({ message, requestId: randomUUID() }),
+      });
+      assert.equal(response.status, 200);
+    };
+    await send(alice.cookie, "mori", "alice 的蓝色线索");
+    await send(alice.cookie, "piko", "alice 的红色线索");
+    await send(bobby.cookie, "mori", "bobby 的绿色线索");
+
+    const anonymous = await fetch(`${base}/api/account/data`);
+    assert.equal(anonymous.status, 401);
+    const response = await fetch(
+      `${base}/api/account/data?accountId=${bobby.account.id}`,
+      { headers: { Cookie: alice.cookie } },
+    );
+    assert.equal(response.status, 200);
+    const archive = (await response.json()) as {
+      format: string;
+      account: Record<string, unknown>;
+      spirits: Array<{
+        spirit: { id: string };
+        messages: Array<{ text: string }>;
+        sharedEncounters: Array<{ message: string }>;
+      }>;
+    };
+    assert.equal(archive.format, "bibo-planet-personal-data-v1");
+    assert.equal(archive.account.id, alice.account.id);
+    assert.equal(archive.account.name, "alice");
+    assert.equal(typeof archive.account.createdAt, "string");
+    assert.equal(archive.account.usageCount, 2);
+    assert.equal(archive.spirits.length, 3);
+    assert.deepEqual(
+      archive.spirits.map(({ spirit, sharedEncounters }) => [
+        spirit.id,
+        sharedEncounters.length,
+      ]),
+      [
+        ["mori", 1],
+        ["piko", 1],
+        ["sela", 0],
+      ],
+    );
+    const text = JSON.stringify(archive);
+    assert.match(text, /alice 的蓝色线索/);
+    assert.match(text, /alice 的红色线索/);
+    assert.doesNotMatch(text, /bobby 的绿色线索/);
+    assert.doesNotMatch(text, new RegExp(bobby.account.id));
+    assert.doesNotMatch(text, /longpassword123|scrypt:|bibo_session/);
+    assert.equal(
+      "visitorId" in archive.spirits[0]!.sharedEncounters[0]!,
+      false,
+    );
+    assert.equal(
+      archive.spirits.find((item) => item.spirit.id === "mori")?.messages
+        .length,
+      2,
+    );
+    const bobbyResponse = await fetch(`${base}/api/account/data`, {
+      headers: { Cookie: bobby.cookie },
+    });
+    assert.equal(bobbyResponse.status, 200);
+    const bobbyText = await bobbyResponse.text();
+    assert.match(bobbyText, /bobby 的绿色线索/);
+    assert.doesNotMatch(bobbyText, /alice 的蓝色线索|alice 的红色线索/);
   } finally {
     await new Promise<void>((resolve) => server.close(() => resolve()));
     await rm(dir, { recursive: true, force: true });

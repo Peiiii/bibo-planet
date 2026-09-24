@@ -157,6 +157,15 @@ export class AuthStore {
     return account ? this.view(account) : null;
   }
 
+  accountData(
+    accountId: string,
+  ): Pick<Account, "id" | "name" | "createdAt" | "usageDay" | "usageCount"> {
+    const account = this.state.accounts.find((item) => item.id === accountId);
+    if (!account) throw new AuthError(401, "登录状态已失效");
+    const { id, name, createdAt, usageDay, usageCount } = account;
+    return { id, name, createdAt, usageDay, usageCount };
+  }
+
   async logout(token: string | undefined): Promise<void> {
     if (!token) return;
     await this.serial(async () => {

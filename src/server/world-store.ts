@@ -91,6 +91,19 @@ export class WorldStore {
     return [...(this.requireState(spiritId).conversations[visitorId] ?? [])];
   }
 
+  visitorData(visitorId: string) {
+    return SPIRITS.map((spirit) => {
+      const state = this.requireState(spirit.id);
+      return {
+        spirit: { id: spirit.id, name: spirit.name },
+        messages: this.conversation(spirit.id, visitorId),
+        sharedEncounters: state.encounters
+          .filter((encounter) => encounter.visitorId === visitorId)
+          .map(({ visitorId: _visitorId, ...encounter }) => encounter),
+      };
+    });
+  }
+
   completedRequest(
     spiritId: SpiritId,
     visitorId: string,
