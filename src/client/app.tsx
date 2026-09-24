@@ -241,8 +241,7 @@ export function App() {
         body: JSON.stringify({ name: authName, password: authPassword }),
       });
       setAccount(result.account);
-      setAuthOpen(false);
-      setAuthPassword("");
+      closeAuth();
     } catch (cause) {
       setAuthError(
         cause instanceof Error ? cause.message : "进入星球失败，请重试",
@@ -250,6 +249,12 @@ export function App() {
     } finally {
       setAuthBusy(false);
     }
+  }
+
+  function closeAuth() {
+    setAuthOpen(false);
+    setAuthPassword("");
+    setAuthError("");
   }
 
   async function logout() {
@@ -524,7 +529,7 @@ export function App() {
           className="auth-backdrop"
           role="presentation"
           onMouseDown={(event) => {
-            if (event.target === event.currentTarget) setAuthOpen(false);
+            if (event.target === event.currentTarget) closeAuth();
           }}
         >
           <section
@@ -535,7 +540,7 @@ export function App() {
             onKeyDown={(event) => {
               if (event.key === "Escape") {
                 event.preventDefault();
-                setAuthOpen(false);
+                closeAuth();
               }
               if (event.key !== "Tab") return;
               const focusable = Array.from(
@@ -559,7 +564,7 @@ export function App() {
               type="button"
               className="auth-close"
               aria-label="关闭"
-              onClick={() => setAuthOpen(false)}
+              onClick={closeAuth}
             >
               ×
             </button>
@@ -623,6 +628,7 @@ export function App() {
               className="auth-switch"
               onClick={() => {
                 setAuthMode(authMode === "register" ? "login" : "register");
+                setAuthPassword("");
                 setAuthError("");
               }}
             >
