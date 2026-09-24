@@ -2,6 +2,12 @@
 
 状态：2026-09-24 记录的实际部署；变更后须同步复核。上线地址为 <https://planet.bibo.bot>，源码为 <https://github.com/Peiiii/bibo-planet>。本手册只存放路径、流程和检查项，不存放任何密钥值或私人对话内容。
 
+## 当前上线锚点（2026-09-25 00:07 北京时间）
+
+Bibo ECS 后端与仓库 `master` 为 `c0d7b1d9cdd48e21bef3b03a154181f11c9ae32d`；前端/Cloudflare Worker 未改，仍沿用上一版。NextClaw Agent SDK 固定快照来自独立源码分支提交 `651fe5b259178abb47d8c394b7b3840978c21e71`，不是 `pnpm link`，也未发布 NextClaw 全量 NPM 批次。服务器快进前工作区干净，更新后按锁文件安装、实际导入 Harness 和 TypeScript 检查均通过；三只 Agent 以服务身份在隔离目录启动/清理成功。只更新并重启 Bibo 的 systemd 单元，`RuntimeDirectory=/run/bibo-planet-agent` 实际为 `bibo-planet:bibo-planet 0700`；Bibo、备份 timer active，`NRestarts=0`，同机 `nextclaw.net` 首页 200。
+
+公网真实 Flash Agent：两个新账号向墨里共发三轮，服务日志显示每轮模型调用 1 次；生产状态只读检查表明甲的第二轮回复含甲昵称和前轮“吉他”，乙回复含乙昵称而未错认甲，私人历史分别 4/2 条。Bibo 专用备份服务随后以新脚本正常停写、加密、上传并重启 Bibo；备份 `daily/daily-2026-09-25-000459.V1BO8zv3.tar.gz.gpg` 在私有 OSS 为 21,904 字节、AES256。本机精确取回并流式解密，归档完整列出账号、三只 AI 状态和三只 AI 各自的 `AGENTS.md`、`IDENTITY.md`、`MEMORY.md`；这证明新范围进入可解密归档，不是生产原位覆盖恢复演练。重启后新的公网账号与皮可真实对话成功，识别当前昵称、会话 2 条、报告 1,178 tokens。正常轮次 `/run/bibo-planet-agent` 只留 3 份无对话的配置文件，没有 SQLite/session 文件；备份触发的服务重启后临时目录归零。公网世界 API 与原站均为 200。浏览器自动控制两次超时，**本次切流尚无新版页面真实点击与手机视觉复验**，不能以 API 链路代替；首次自然备份、公开账号删除和 AC-10/11 也仍未完成。用户可以从线上地址亲自体验已切换的 Agent 回答，但不得宣传为完成正式获客验收。
+
 ## 运行边界
 
 - Cloudflare Worker `bibo-planet` 提供静态站，将 `/api/*` 通过 HTTPS 转发至 `https://nextclaw.net/__bibo/api/*`。Worker secret `BIBO_EDGE_SECRET` 与服务端 `/etc/bibo-planet/env` 中同名值一致；前端和 Git 都不能得到该值。
@@ -9,13 +15,13 @@
 - 阿里云杭州 ECS `i-bp11euxyc7o1ned0k8yd` 上的 Bibo 服务独立运行：源码 `/opt/bibo-planet`，Node `/opt/bibo-node/bin/node`，systemd 单元 `bibo-planet`，只监听 `127.0.0.1:3039`，运行身份 `bibo-planet`。Nginx 的 `nextclaw-net.conf` 包含独立片段 `/etc/nginx/bibo-location.conf`，旧站主页不应受影响。
 - 用户数据在 `/var/lib/bibo-planet`，其中 `accounts.json` 含密码哈希和会话哈希，`spirits/*/state.json` 含所有旅人的原始对话及共同遭遇，均属敏感数据。服务端凭据在 root-only `/etc/bibo-planet/env`。不要把数据、环境文件、Cloud Assistant 输出或备份上传到仓库。
 - 生产 unit 设置 `NODE_ENV=production`。自 `bef2fd8` 起，启动时若账号或任意一只精灵的状态文件缺失，进程会拒绝监听，不能靠自动新建空数据来“恢复”；先核对数据路径与挂载，按下方备份流程恢复，不能删除其余文件后重启。首次本地开发世界仍可显式初始化，生产不以此方式引导新世界。
-- 生产模型当前配置为 DeepSeek 正式 API 的 `deepseek/deepseek-flash`，通过 NextClaw Harness 的无宿主工具模型能力调用。Flash 的特定备案号尚未核实，不能沿用旧 Chat 模型号。当前公开版不具备自写代码、文件/命令/网络工具或 mini-app 沙箱；不能在产品文案中宣称这些已交付。
+- 生产模型当前配置为 DeepSeek 正式 API 的 `deepseek/deepseek-flash`，经受限 NextClaw Agent 运行。Flash 的特定备案号尚未核实，不能沿用旧 Chat 模型号。当前公开版不具备自写代码、任意文件/命令/网络工具或 mini-app 沙箱；不能在产品文案中宣称这些已交付。
 
-### NextClaw Agent 待切换运行合同（2026-09-24，本机已验证，生产尚未部署）
+### NextClaw Agent 运行合同（2026-09-25，生产已切换）
 
-目标版本让三只共享 AI 分别使用稳定 NextClaw Agent ID、独立工作空间和真正的 `runTask`。公网访客只允许调用该 AI 的 `bibo_memory_read` / `bibo_memory_replace` 两个固定无路径工具；不得开放 NextClaw 默认的文件、命令、网络工具，斜杠命令亦关闭。长期文件位于 `BIBO_DATA_DIR/workspace/agents/<id>/`，共享笔记可能受访客影响；其他人的原始对话仍由世界状态单独管理，不因 Agent 工作空间存在就允许直接查询。
+当前版本让三只共享 AI 分别使用稳定 NextClaw Agent ID、独立工作空间和真正的 `runTask`。公网访客只允许调用该 AI 的 `bibo_memory_read` / `bibo_memory_replace` 两个固定无路径工具；不得开放 NextClaw 默认的文件、命令、网络工具，斜杠命令亦关闭。长期文件位于 `BIBO_DATA_DIR/workspace/agents/<id>/`，共享笔记可能受访客影响；其他人的原始对话仍由世界状态单独管理，不因 Agent 工作空间存在就允许直接查询。
 
-每轮 Harness/session 的临时目录应位于 `BIBO_AGENT_RUNTIME_DIR` 下；目标 systemd unit 设置为 `/run/bibo-planet-agent`、0700，正常完成后销毁整轮 home。单删 session 不足以清除 SQLite WAL 中的原文。更新前必须先确认正式 SDK 依赖而非 `pnpm link`，执行 Bibo 专用加密备份并验证上传，再在 ECS 以 `bibo-planet` 身份检查 unit 对临时目录/持久工作空间的写权限、内存限制与凭据引用；运行受控测试账号的连续两轮及跨账号链路，检查报告 token、实际模型调用次数、无宿主工具调用和临时目录残留。新备份应包含 `workspace/agents`，精确取回、解密、隔离恢复后再算该范围可恢复；自然 timer 首次触发仍单独验收。任何一项失败，保留或回滚应用代码并保护数据，不把 model-only 旧版或仅有 `runTask` 的空工具运行宣布为最终 Agent 能力。
+每轮 Harness/session 的临时目录位于 `BIBO_AGENT_RUNTIME_DIR=/run/bibo-planet-agent` 下；systemd 以 0700 创建目录，正常完成后销毁整轮 home。单删 session 不足以清除 SQLite WAL 中的原文。后续更新前仍须核对真实 SDK 依赖而非 `pnpm link`，执行 Bibo 专用加密备份并验证上传；以 `bibo-planet` 身份检查 unit 写权限、内存限制与凭据引用，复测连续两轮及跨账号链路、报告 token、模型调用次数、无宿主工具调用和临时目录残留。新备份已经包含 `workspace/agents` 并完成离机取回、解密列项；隔离恢复及自然 timer 首次触发仍须单独验收。任何一项失败，保留或回滚应用代码并保护数据，不把仅有 `runTask` 的空工具运行宣布为最终 Agent 能力。
 
 本轮 SDK 部署快照固定在 `vendor/nextclaw-agent/` 的 19 个 tarball，全部为同一 NextClaw workspace 闭包；来源分支为 `codex/bibo-agent-tool-policy`，源码 SHA `651fe5b259178abb47d8c394b7b3840978c21e71`。`package.json` 的文件依赖/overrides 和 `pnpm-lock.yaml` 的完整性校验共同决定安装产物。发布前必须在干净环境执行 `pnpm install --frozen-lockfile` 并真实加载 Harness，禁止通过本机源码链接测试冒充安装验证。更新源码时要重新构建**整个匹配闭包**、重打包、核对 19 个 lock integrity，重新做干净安装和真实 Agent 冒烟；不要只替换 Kernel tarball，也不要把 tarball 与来源不一致的同名 NPM 版本混装。这是本轮暂不触发 NextClaw 全量 NPM 批次的固定快照，不是长期 SDK 发布制度。
 
