@@ -72,7 +72,7 @@ export class AuthStore {
     password: string,
     clientIp: string,
   ): Promise<{ account: AccountView; token: string }> {
-    this.limitAttempts(`register:${clientIp}`, 3, 24 * 60 * 60_000);
+    this.limitAttempts(`register:${clientIp}`, 20, 24 * 60 * 60_000);
     const displayName = name.normalize("NFC").trim();
     const normalizedName = displayName.toLocaleLowerCase("zh-CN");
     if (!/^[\p{L}\p{N}_]{3,24}$/u.test(displayName))

@@ -37,3 +37,21 @@ test("registration, login, quota and logout survive a store restart", async () =
     await rm(dir, { recursive: true, force: true });
   }
 });
+
+test("several travelers behind one address can register", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "bibo-shared-ip-test-"));
+  try {
+    const auth = new AuthStore(dir);
+    await auth.initialize();
+    for (let index = 0; index < 4; index += 1) {
+      const registered = await auth.register(
+        `旅人${index + 1}号`,
+        "ten-characters-or-more",
+        "203.0.113.9",
+      );
+      assert.equal(registered.account.name, `旅人${index + 1}号`);
+    }
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});

@@ -4,7 +4,7 @@
   "main": "src/edge/worker.ts",
   "compatibility_date": "2026-09-24",
   "compatibility_flags": ["nodejs_compat"],
-  "workers_dev": true,
+  "workers_dev": false,
   "routes": [{ "pattern": "planet.bibo.bot", "custom_domain": true }],
   "assets": {
     "directory": "./dist",

@@ -5,7 +5,9 @@ import { AuthStore } from "./auth-store.ts";
 import { SpiritRuntime } from "./spirit-runtime.ts";
 import { WorldStore } from "./world-store.ts";
 
-const dataDir = resolve(process.env.BIBO_DATA_DIR ?? resolve(process.cwd(), ".data"));
+const dataDir = resolve(
+  process.env.BIBO_DATA_DIR ?? resolve(process.cwd(), ".data"),
+);
 const store = new WorldStore(dataDir);
 await store.initialize();
 const auth = new AuthStore(dataDir);
