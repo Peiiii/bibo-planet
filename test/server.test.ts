@@ -35,12 +35,11 @@ test("registered accounts isolate conversation lists, while both visitors can wa
   await store.initialize();
   const auth = new AuthStore(dir);
   await auth.initialize();
-  const runtime = new SpiritRuntime(store, async () => ({
-    content: "你好，来访者。",
-    toolCalls: [],
-    finishReason: "stop",
-    usage: { totalTokens: 31 },
-  }));
+  const contexts: string[] = [];
+  const runtime = new SpiritRuntime(store, async (input) => {
+    contexts.push(input.context);
+    return { text: "你好，来访者。", totalTokens: 31 };
+  });
   const server = createWorldServer(
     store,
     runtime,
@@ -107,6 +106,8 @@ test("registered accounts isolate conversation lists, while both visitors can wa
     assert.equal(firstTurn.spirit.encounters, 1);
     assert.equal(firstTurn.spirit.lastEncounterAt.length > 0, true);
     assert.equal(firstTurn.account.remainingToday, 11);
+    assert.match(contexts[0] ?? "", /"name":"alice"/);
+    assert.doesNotMatch(contexts[0] ?? "", /"name":"bobby"/);
     const replay = await fetch(`${base}/api/spirits/mori/messages`, {
       method: "POST",
       headers: { Cookie: cookieA, "Content-Type": "application/json" },
@@ -247,10 +248,8 @@ test("personal data export uses only the cookie identity and excludes other trav
   const auth = new AuthStore(dir);
   await auth.initialize();
   const runtime = new SpiritRuntime(store, async () => ({
-    content: "精灵回应。",
-    toolCalls: [],
-    finishReason: "stop",
-    usage: { totalTokens: 31 },
+    text: "精灵回应。",
+    totalTokens: 31,
   }));
   const server = createWorldServer(
     store,
@@ -365,10 +364,8 @@ test("account deletion is cookie-scoped, password-confirmed, and leaves another 
   const auth = new AuthStore(dir);
   await auth.initialize();
   const runtime = new SpiritRuntime(store, async () => ({
-    content: "精灵回应。",
-    toolCalls: [],
-    finishReason: "stop",
-    usage: { totalTokens: 31 },
+    text: "精灵回应。",
+    totalTokens: 31,
   }));
   const server = createWorldServer(
     store,

@@ -52,6 +52,7 @@ test("a deletion survives interruption and an older account/world snapshot canno
       "203.0.113.82",
     );
     for (const spiritId of ["mori", "piko", "sela"] as const) {
+      await world.replaceMemory(spiritId, `可能来自原旅人的笔记 ${spiritId}`);
       await world.recordTurn({
         spiritId,
         visitorId: alice.account.id,
@@ -73,6 +74,9 @@ test("a deletion survives interruption and an older account/world snapshot canno
       join(dir, "accounts.json"),
       ...(["mori", "piko", "sela"] as const).map((spiritId) =>
         join(dir, "spirits", spiritId, "state.json"),
+      ),
+      ...(["mori", "piko", "sela"] as const).map((spiritId) =>
+        join(dir, "workspace", "agents", spiritId, "MEMORY.md"),
       ),
     ];
     const oldSnapshot = await Promise.all(
@@ -122,6 +126,8 @@ test("a deletion survives interruption and an older account/world snapshot canno
       new DeletionLedger(join(dir, "deletion-ledger"), remote),
     );
     await restartedDeletion.initialize();
+    for (const spiritId of ["mori", "piko", "sela"] as const)
+      assert.equal(await restartedWorld.readMemory(spiritId), "");
     assert.deepEqual(restartedAuth.deletingAccountIds(), []);
     assert.equal(restartedAuth.account(alice.token), null);
     assert.equal(restartedAuth.account(bob.token)?.id, bob.account.id);
@@ -144,6 +150,8 @@ test("a deletion survives interruption and an older account/world snapshot canno
       new DeletionLedger(join(dir, "deletion-ledger"), remote),
     );
     await restoredDeletion.initialize();
+    for (const spiritId of ["mori", "piko", "sela"] as const)
+      assert.equal(await restoredWorld.readMemory(spiritId), "");
     assert.equal(restoredAuth.account(alice.token), null);
     assert.equal(restoredAuth.account(bob.token)?.id, bob.account.id);
     for (const spiritId of ["mori", "piko", "sela"] as const) {

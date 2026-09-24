@@ -27,6 +27,7 @@ test -f "$data_dir/accounts.json"
 test -f "$data_dir/spirits/mori/state.json"
 test -f "$data_dir/spirits/piko/state.json"
 test -f "$data_dir/spirits/sela/state.json"
+test -d "$data_dir/workspace/agents"
 gpg --homedir "$gpg_home" --list-keys "$recipient" >/dev/null
 
 timestamp=$(date +%Y-%m-%d-%H%M%S)
@@ -47,7 +48,7 @@ trap cleanup EXIT
 
 stopped=true
 systemctl stop bibo-planet
-tar -C "$data_dir" -czf "$archive" accounts.json spirits
+tar -C "$data_dir" -czf "$archive" accounts.json spirits workspace/agents
 systemctl start bibo-planet
 stopped=false
 

@@ -2,6 +2,46 @@
 
 状态：进行中。本文是本轮交付的长期记录；遇到上下文压缩，先以这里的验收合同和当前证据继续，不把未验证事项当成完成。
 
+## 当前接续检查点（2026-09-24 23:55 北京时间）
+
+**公网仍未切换，不能声称 Agent 已上线。** NextClaw 隔离分支 `codex/bibo-agent-tool-policy` 的收敛补丁已提交并推送，源码 SHA `651fe5b259178abb47d8c394b7b3840978c21e71`；Bibo 的 19 包 vendored 快照来自这一源码及同一工作区依赖闭包。重新构建并打包后，19 个 tarball SHA-512 与锁文件逐一匹配，`pnpm install --frozen-lockfile --offline` 通过。Bibo 44/44 测试、`tsc`、lint、格式、构建和差异空白检查通过；NextClaw Kernel/Harness `tsc`、Kernel 定向 20/20 测试和差异可维护性检查通过（0 error，1 个 400 行文件预算提醒）。上一检查点的“最终全套待重跑/源分支待推送”已完成；真实 Flash 两账号结果仍以该节记录为准，尚未冒充新的公网测试。
+
+下一步：在远端先只读核对 Bibo 与同机旧站、代码 SHA、内存及持久数据；执行 Bibo 专用加密备份并独立验证对象；再以服务身份验证固定 SDK 包安装、受限 Agent、临时目录与持久工作区权限，必要时回滚应用而不碰数据。切换后须以公网真实账号验证“知道当前昵称/只接续本人私聊”、模型用量、无宿主工具与失败路径，同时观察旧站健康。首次自然备份、隐私/运营与境内公开服务约束仍按 AC-06/10/11 独立验收，不能因 Agent 切流而宣布整个获客目标完成。
+
+## 当前接续检查点（2026-09-24 23:48 北京时间）
+
+**线上仍为 model-only，AC-12 未关闭；本节全部是本地隔离验证。** 用户要求优化此前的架构并指出 AI 不认识当前用户。查出 HTTP 已认证账号有 `id/name`，但运行时只接 ID 并向模型提供前 8 位编号；现已让完整的当前账号身份和本人与当前 AI 的私人历史直接进入 Agent 上下文，不把用户当 AI 主人，也不凭别的 AI 的未知私聊编造经历。Bibo 删除了模型消息→Agent 输入→伪造 `LLMResponse` 的适配回路，测试替身现在以 Agent 运行输入/结果工作。三只 AI 启动时只核验配置，逐轮按需创建 Harness，不留空闲实例；停服务会先取消并等待进行中的轮次。
+
+NextClaw 隔离分支新增的收敛：受限工具目录遇到同名已允许工具立即失败，不再静默选先注册者；`contextProfile: "embedded"` 保留基础安全与执行约束而省去 NextClaw 产品专属上下文；`homeDir` 也拥有 asset 目录。真实 Agent 一轮揭示异步会话日志仍在写入时直接删除目录会出现 `ENOTEMPTY`，因此 Bibo 仍先 `sessions.delete` 等待该 session 事件并逻辑删除，Kernel dispose 也排空剩余事件并关闭会话目录，最后才物理删除临时 home；不能把逻辑删会话称为物理隐私保证。该竞态和停服务取消均已有定向测试。
+
+NextClaw Harness 的实际 workspace 内部依赖闭包是 19 个包，不是 Kernel/Harness 两个包。已从同一隔离源码依赖图构建并打包为 Bibo `vendor/nextclaw-agent/*.tgz`（合计约 1.9 MB），`package.json` 用文件依赖和 pnpm overrides 固定完整闭包；19 个 tarball 的 SHA-512 与 `pnpm-lock.yaml` 全部匹配。Bibo 现已脱离 `pnpm link`。在全新临时目录只复制 package、lock 和 vendor 后，`pnpm install --frozen-lockfile` 与 Harness 模块导入成功；本仓库离线锁文件安装、`tsc`、44 项测试中的本轮定向项目（最终全套 44 项待收尾重跑）、lint、格式/构建此前 43 项版本均通过。包装形式是此轮不发布 NextClaw 约 43 包标准 NPM 批次的固定部署快照，长期须换成有版本号的正式 SDK 发行；源分支仍须提交/推送并记录 SHA。
+
+正式包形态下的隔离 DeepSeek Flash 真 Agent 连续三轮成功，各轮实际模型调用 1 次。测试甲的第二轮准确说出当前昵称和上一轮“学吉他”，测试乙只说出自己的昵称，并明确不知道乙过去学过什么；私人历史分别 4/2 条，运行 home 完成后仅余无对话的 `configs` 目录。另用故意无效的合成 API Key 触发模型失败，未记私人消息且临时 home 仍只余 `configs`。这些证明了本机正常/供应商失败路径，不证明 ECS 身份、崩溃后 `/run` 清理、公网浏览器或法律运营门。共享 DeepSeek 钱包只读复核可用，余额仍在已报告的 1–10 元区间；没有充值或输出凭据。下一步先完成代码 Review 与最终回归，验证 ECS 的运行身份/内存/残留/备份，再决定能否切换公开服务；切流前绝不能把现网页面当成 Agent 已上线。
+
+## 当前接续检查点（2026-09-24 22:29 北京时间）
+
+**线上仍为 model-only，AC-12 未关闭。** Bibo 与 NextClaw 的 Agent 改动均只在本地、未提交或部署。完成逐轮销毁临时 Harness home 后，统一重跑 Bibo `tsc`、43/43 测试、lint、格式、Vite build、差异空白检查，均通过；NextClaw Kernel `tsc`、18/18 定向测试、Harness `tsc`/构建/公共入口测试通过，Kernel lint 只有 14 个既有 warning，差异维护性检查 0 error、2 warning。随机合成消息的本机临时运行目录扫描未发现 SQLite WAL 或其他剩余文件中的原文，但只覆盖正常完成路径。
+
+又以两个全新账号通过本机真实 HTTP API 完成注册、各向同一只 AI 发送一条消息、读取各自会话。两次均由 `NextclawHarness.runTask` 实际执行受限 Agent，各 1 次模型调用、报告用量分别 853/954 tokens、回复非空；两个账号各自只看到自己的两条私聊记录。该检查证明了逐轮重建后仍可连续提供服务与私人会话隔离，不证明公网切流、长期稳定或完整隐私验收。一次测试昵称因包含 UUID 的连字符被注册规则拒绝，测试数据改为合法昵称后成功；不是产品代码故障。
+
+另用带随机合成标记的真实 Agent 消息检查了持久工作空间：回复成功，`workspace/` 全目录扫描没有该标记；原始对话仍按设计保存在世界状态中。只说明当前正常路径没有把该轮原文额外复制进 Agent 工作空间，不是对所有故障路径或私聊泄露的形式化保证。22:29 对共享 DeepSeek 供应商钱包做只读查询，可用、CNY、余额仍落在此前已报告的 1–10 元区间；没有充值或输出具体金额，且该余额不是 Bibo 专属账单或硬预算。
+
+`pnpm link` 仍使 Bibo 本机依赖状态偏离正式依赖，绝不能据此部署。NextClaw 标准 NPM changeset 批次已累计约 43 个包，发布整个批次明显超出 Bibo 本次所需的 Kernel/Harness 两个 SDK 包；已异步请用户选择发布范围。NextClaw SDK 来源已提交并推送到隔离分支 `codex/bibo-agent-tool-policy`，提交 `bc17e7780`，未合入主干或发布 NPM。
+
+曾尝试仅将该提交的 Kernel/Harness 编译包固定到 Bibo，以避免整批发布；包可生成并干净安装，`tsc` 也通过，但真实运行时测试立即因 registry 中的旧 `@nextclaw/core` 缺少 `buildLocalizedTextMap` 导出失败。说明这两个包并非当前源码的完整运行时兼容闭包，**此构建已撤除、没有发布或部署**。继续只固定这两个包将是不可用的假交付；要么走经完整验证的 NextClaw 标准依赖批次，要么构建并验收完整匹配的内部依赖闭包。当前本机重新链接隔离源码用于开发；`pnpm-lock.yaml` 尚有包管理器机械改写，不可提交为生产锁文件。下一步先确定可发布依赖集合，再做 ECS 身份下的安全、内存、残留、恢复与公网链路验收；现网未切换。
+
+## 前一接续检查点（2026-09-24 22:15 北京时间）
+
+**线上仍是 model-only，AC-12 未关闭。** 本地 Bibo `master` 从已推送的 `362a012` 开始，只修改了本任务设计、Agent 运行时、共享记忆与删除测试、备份脚本和 unit；`pnpm link` 还机械改写了 `pnpm-lock.yaml`，须在发布前恢复为正式包版本，绝不能把相邻源码链接发布。NextClaw 的新 SDK 能力仍在 `/Users/peiwang/Projects/nextbot-bibo-agent-tool-policy` 独立 worktree，未提交、未发布；Nextbot 主工作区的他人草稿未触碰。
+
+实现进展：Bibo 生产代码已不再注册 `ModelOnlyContribution` 或调用 `kernel.models.chat`。每只 AI 使用独立 `NextclawHarness.runTask`，静态只允许 `bibo_memory_read` / `bibo_memory_replace` 两个无路径参数的工具；斜杠命令不执行、原生冗长上下文/自动标题/会话搜索索引关闭，一次性 session 在 run 后删除。运行配置从零生成，只有选中供应商可用，密钥通过引用读取；NextClaw 自动补齐的内置供应商被显式禁用，只有不可用占位值，原无关供应商字面凭据不被复制。`WorldStore` 保留私人对话/共同遭遇唯一 owner，每只 AI 的 `MEMORY.md` 是受限、可在任意账号删除及离机墓碑重放时全部清空的共享补充；停服务备份脚本已纳入三只 AI 的工作空间。设计取舍见[公网设计](../designs/2026-09-24-public-world.design.md)顶部：初版不开放任意文件、命令、网络或代码执行，未来开放时另过 OS 隔离门；这并非已交付自编程 mini-app。
+
+本地真实模型证据：本机 `.env` 选中的 `codex-sub` 指向 `127.0.0.1` 代理，连续调用在 45 秒内无任何模型输出，工具次数 0，**不能作为可用模型路径**；这不是 NextClaw Agent 运行入口缺失。显式选用已配置的 `deepseek/deepseek-flash` 后，受限 Agent 返回真实 `kind=agent`、run ID、模型回复和报告用量。关闭不适用的 NextClaw 原生上下文后，简单问候一次调用约 0.85 秒、841 tokens、1 次模型请求；在要求记公开测试事实的另一轮中，它实调 `bibo_memory_replace`，报告 3 次模型请求、3,054 tokens，记忆跨运行时重启仍在，删除访客数据后笔记和该访客私聊均清空。**这是隔离临时世界和本机凭据的验证，不是公网验证。**
+
+验证：Bibo `tsc`、42/42 单测、lint、格式、Vite build 通过；NextClaw Kernel 定向 17/17 测试、`tsc`、lint（仅 14 个预存 warning）、Harness 公共入口测试/构建通过，差异维护性检查 0 error / 1 个 Kernel 文件临近 400 行 budget 的 warning。新增了旧快照 + 离机墓碑重放时共享笔记不复活的回归断言。尚待 SDK `maxTokens` 最新补丁的完整重验、正式 NPM 发布和独立安装、Bibo 正式依赖切换、ECS 私有数据快照、服务身份下的受限工具/权限/内存/会话残留验证，再经公网桌面/手机注册与连续对话复测。安全或模型成本门不通过则保留现网旧版，不声称切流成功；AC-05/06/08/10/11 等先前未关闭项依旧未关闭。
+
+追加隐私验收（约 22:25，北京时间，仍未发布）：只删 NextClaw session 后，用随机合成标记扫描临时 Agent home，发现 `.ncp-agent-session-catalog.sqlite-wal` 仍含该轮原文。已改为每轮结束销毁整个临时 Harness home；持久 `workspace/agents/<id>` 独立保留、稳定 Agent ID 每轮重新加载。再次用真实 DeepSeek Flash 跑一轮，返回有效 Agent 回复、1 次模型请求、924 tokens；扫描剩余临时运行目录 19 个文件，合成标记残留 0 处。这个证据覆盖本机正常完成路径，不覆盖进程崩溃和 ECS systemd RuntimeDirectory 的实际行为，须在生产隔离验证。原上段 42 项与 17 项测试数字是当时快照；后续已扩展到 Bibo 43 项及 SDK 18 项，但最新整套检查尚待统一收尾。
+
 ## 当前接续检查点（2026-09-24 21:30 北京时间）
 
 用户再次明确指出：目前没有真正使用 NextClaw Agent。核查结论是肯定的：线上 `SpiritRuntime` 注册 `ModelOnlyContribution`，只调用 `kernel.models.chat`；尚未调用 `NextclawHarness.runTask`，没有 Agent run、可操作的隔离工作区或持久能力演进。此前选择 model-only 是为避免把匿名公网输入直接接入 NextClaw 默认的宿主文件、命令和网络工具，但把它当成最终交付是不对的。**AC-12 仍开放**；接续工作必须实现和实测受限的真实 NextClaw Agent，不能把改文案、调用同一个模型或仅换成无工具的 `runTask` 宣称为完成。

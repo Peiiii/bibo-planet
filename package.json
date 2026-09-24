@@ -18,7 +18,7 @@
     "energy:add": "tsx src/server/energy-cli.ts"
   },
   "dependencies": {
-    "@nextclaw/harness": "0.2.24",
+    "@nextclaw/harness": "file:vendor/nextclaw-agent/nextclaw-harness-0.2.24.tgz",
     "dotenv": "^16.6.0",
     "react": "19.3.0",
     "react-dom": "19.3.0"
@@ -39,6 +39,28 @@
     "typescript-eslint": "^8.56.0",
     "vite": "^6.3.0",
     "wrangler": "^4.137.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "@nextclaw/app-runtime": "file:vendor/nextclaw-agent/nextclaw-app-runtime-0.16.9.tgz",
+      "@nextclaw/channel-extension-feishu": "file:vendor/nextclaw-agent/nextclaw-channel-extension-feishu-0.2.40.tgz",
+      "@nextclaw/channel-extension-weixin": "file:vendor/nextclaw-agent/nextclaw-channel-extension-weixin-0.2.40.tgz",
+      "@nextclaw/core": "file:vendor/nextclaw-agent/nextclaw-core-0.18.3.tgz",
+      "@nextclaw/extension-sdk": "file:vendor/nextclaw-agent/nextclaw-extension-sdk-0.5.9.tgz",
+      "@nextclaw/feishu-core": "file:vendor/nextclaw-agent/nextclaw-feishu-core-0.3.13.tgz",
+      "@nextclaw/kernel": "file:vendor/nextclaw-agent/nextclaw-kernel-0.18.4.tgz",
+      "@nextclaw/mcp": "file:vendor/nextclaw-agent/nextclaw-mcp-0.3.53.tgz",
+      "@nextclaw/ncp": "file:vendor/nextclaw-agent/nextclaw-ncp-0.11.2.tgz",
+      "@nextclaw/ncp-agent-runtime": "file:vendor/nextclaw-agent/nextclaw-ncp-agent-runtime-0.4.26.tgz",
+      "@nextclaw/ncp-agent-runtime-next": "file:vendor/nextclaw-agent/nextclaw-ncp-agent-runtime-next-0.1.28.tgz",
+      "@nextclaw/ncp-http-agent-client": "file:vendor/nextclaw-agent/nextclaw-ncp-http-agent-client-0.4.25.tgz",
+      "@nextclaw/ncp-mcp": "file:vendor/nextclaw-agent/nextclaw-ncp-mcp-0.2.53.tgz",
+      "@nextclaw/ncp-toolkit": "file:vendor/nextclaw-agent/nextclaw-ncp-toolkit-0.6.27.tgz",
+      "@nextclaw/nextclaw-ncp-runtime-http-client": "file:vendor/nextclaw-agent/nextclaw-nextclaw-ncp-runtime-http-client-0.3.25.tgz",
+      "@nextclaw/nextclaw-ncp-runtime-stdio-client": "file:vendor/nextclaw-agent/nextclaw-nextclaw-ncp-runtime-stdio-client-0.3.53.tgz",
+      "@nextclaw/runtime": "file:vendor/nextclaw-agent/nextclaw-runtime-0.4.52.tgz",
+      "@nextclaw/shared": "file:vendor/nextclaw-agent/nextclaw-shared-0.8.2.tgz"
+    }
   },
   "packageManager": "pnpm@9.15.1"
 }

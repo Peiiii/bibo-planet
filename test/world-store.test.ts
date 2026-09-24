@@ -142,6 +142,30 @@ test("same-spirit turns run serially", async () => {
   }
 });
 
+test("each shared AI keeps only its own bounded notes, and deletion clears all notes", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "bibo-memory-test-"));
+  try {
+    const store = new WorldStore(dir);
+    await store.initialize();
+    await store.replaceMemory("mori", "蓝色风铃");
+    await store.replaceMemory("piko", "普通石头");
+    assert.equal(await store.readMemory("mori"), "蓝色风铃");
+    assert.equal(await store.readMemory("sela"), "");
+    await assert.rejects(
+      store.replaceMemory("mori", "x".repeat(8_001)),
+      /无效/,
+    );
+    const restarted = new WorldStore(dir);
+    await restarted.initialize(true);
+    assert.equal(await restarted.readMemory("piko"), "普通石头");
+    await restarted.removeVisitorData("any-visitor");
+    for (const spirit of ["mori", "piko", "sela"] as const)
+      assert.equal(await restarted.readMemory(spirit), "");
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
 test("existing worlds never silently recreate missing spirit state", async () => {
   const dir = await mkdtemp(join(tmpdir(), "bibo-world-required-test-"));
   try {

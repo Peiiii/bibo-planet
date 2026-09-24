@@ -161,7 +161,7 @@ export function createWorldServer(
           return;
         }
         const result = await auth.withMessagePermit(account.id, () =>
-          runtime.talk(spirit.id as SpiritId, account.id, message, requestId),
+          runtime.talk(spirit.id as SpiritId, account, message, requestId),
         );
         sendJson(response, 200, {
           ...result,

@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
+import { lstat, mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import {
   INITIAL_ENERGY,
@@ -271,6 +271,8 @@ export class WorldStore {
     this.suppressVisitor(visitorId);
     for (const spirit of SPIRITS) {
       await this.withSpiritLock(spirit.id, async () => {
+        // Shared notes may contain this visitor's words without attribution.
+        await this.replaceMemory(spirit.id, "");
         const old = this.requireState(spirit.id);
         const encounters = old.encounters.filter(
           (encounter) => encounter.visitorId !== visitorId,
@@ -287,6 +289,38 @@ export class WorldStore {
         this.states.set(spirit.id, next);
       });
     }
+  }
+
+  async readMemory(spiritId: SpiritId): Promise<string> {
+    const path = this.memoryPath(spiritId);
+    try {
+      if (!(await lstat(path)).isFile())
+        throw new Error(`无效的 AI 记忆文件：${spiritId}`);
+      const content = await readFile(path, "utf8");
+      if (content.length > 8_000)
+        throw new Error(`AI 记忆超过长度上限：${spiritId}`);
+      return content;
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") return "";
+      throw error;
+    }
+  }
+
+  async replaceMemory(spiritId: SpiritId, content: string): Promise<void> {
+    if (
+      !findSpirit(spiritId) ||
+      typeof content !== "string" ||
+      content.length > 8_000
+    )
+      throw new Error("无效的 AI 共享记忆");
+    const path = this.memoryPath(spiritId);
+    await mkdir(join(this.dataDir, "workspace", "agents", spiritId), {
+      recursive: true,
+      mode: 0o700,
+    });
+    const temporary = `${path}.${randomUUID()}.tmp`;
+    await writeFile(temporary, content, { mode: 0o600 });
+    await rename(temporary, path);
   }
 
   async credit(spiritId: SpiritId, amount: number): Promise<number> {
@@ -317,6 +351,11 @@ export class WorldStore {
 
   private statePath(spiritId: SpiritId): string {
     return join(this.dataDir, "spirits", spiritId, "state.json");
+  }
+
+  private memoryPath(spiritId: SpiritId): string {
+    if (!findSpirit(spiritId)) throw new Error(`未知 AI：${spiritId}`);
+    return join(this.dataDir, "workspace", "agents", spiritId, "MEMORY.md");
   }
 
   private async persist(spiritId: SpiritId, state: SpiritState): Promise<void> {

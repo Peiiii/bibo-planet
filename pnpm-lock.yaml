@@ -4,13 +4,33 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+overrides:
+  '@nextclaw/app-runtime': file:vendor/nextclaw-agent/nextclaw-app-runtime-0.16.9.tgz
+  '@nextclaw/channel-extension-feishu': file:vendor/nextclaw-agent/nextclaw-channel-extension-feishu-0.2.40.tgz
+  '@nextclaw/channel-extension-weixin': file:vendor/nextclaw-agent/nextclaw-channel-extension-weixin-0.2.40.tgz
+  '@nextclaw/core': file:vendor/nextclaw-agent/nextclaw-core-0.18.3.tgz
+  '@nextclaw/extension-sdk': file:vendor/nextclaw-agent/nextclaw-extension-sdk-0.5.9.tgz
+  '@nextclaw/feishu-core': file:vendor/nextclaw-agent/nextclaw-feishu-core-0.3.13.tgz
+  '@nextclaw/kernel': file:vendor/nextclaw-agent/nextclaw-kernel-0.18.4.tgz
+  '@nextclaw/mcp': file:vendor/nextclaw-agent/nextclaw-mcp-0.3.53.tgz
+  '@nextclaw/ncp': file:vendor/nextclaw-agent/nextclaw-ncp-0.11.2.tgz
+  '@nextclaw/ncp-agent-runtime': file:vendor/nextclaw-agent/nextclaw-ncp-agent-runtime-0.4.26.tgz
+  '@nextclaw/ncp-agent-runtime-next': file:vendor/nextclaw-agent/nextclaw-ncp-agent-runtime-next-0.1.28.tgz
+  '@nextclaw/ncp-http-agent-client': file:vendor/nextclaw-agent/nextclaw-ncp-http-agent-client-0.4.25.tgz
+  '@nextclaw/ncp-mcp': file:vendor/nextclaw-agent/nextclaw-ncp-mcp-0.2.53.tgz
+  '@nextclaw/ncp-toolkit': file:vendor/nextclaw-agent/nextclaw-ncp-toolkit-0.6.27.tgz
+  '@nextclaw/nextclaw-ncp-runtime-http-client': file:vendor/nextclaw-agent/nextclaw-nextclaw-ncp-runtime-http-client-0.3.25.tgz
+  '@nextclaw/nextclaw-ncp-runtime-stdio-client': file:vendor/nextclaw-agent/nextclaw-nextclaw-ncp-runtime-stdio-client-0.3.53.tgz
+  '@nextclaw/runtime': file:vendor/nextclaw-agent/nextclaw-runtime-0.4.52.tgz
+  '@nextclaw/shared': file:vendor/nextclaw-agent/nextclaw-shared-0.8.2.tgz
+
 importers:
 
   .:
     dependencies:
       '@nextclaw/harness':
-        specifier: 0.2.24
-        version: 0.2.24(ws@8.21.3)(zod@3.25.76)
+        specifier: file:vendor/nextclaw-agent/nextclaw-harness-0.2.24.tgz
+        version: file:vendor/nextclaw-agent/nextclaw-harness-0.2.24.tgz(ws@8.21.0)(zod@3.25.76)
       dotenv:
         specifier: ^16.6.0
         version: 16.6.1
@@ -1043,8 +1063,8 @@ packages:
   '@larksuiteoapi/node-sdk@1.74.0':
     resolution: {integrity: sha512-K2WoGy6x97u2kPPSFsu0v9X8CY+0q4OwO3rhXiOSRXYjGS7ovydFpEH07AS5VYcBnbQCoc5sGezo0IEGVViuoA==}
 
-  '@modelcontextprotocol/sdk@1.30.0':
-    resolution: {integrity: sha512-xKd8OIzlqNzcqcNumGAa6g+PW2kjD5vrpcKOnfldAUPP3j7lnqMPwlTXQm8gF+UwH72z0lqaRbjr9hqGz0eITA==}
+  '@modelcontextprotocol/sdk@1.30.1':
+    resolution: {integrity: sha512-H2HxLvC3HDNybePJaLdSrU1hhUK5iQw+WvV1b01myFyI7sdVGe1u/IPTE5D9fGCiJDVtgMV/lmFkQXLmQyIFYA==}
     engines: {node: '>=18'}
     peerDependencies:
       '@cfworker/json-schema': ^4.1.1
@@ -1059,63 +1079,82 @@ packages:
     cpu: [x64]
     os: [linux]
 
-  '@nextclaw/app-runtime@0.16.9':
-    resolution: {integrity: sha512-nMJFZ/Gk4tPYSmEOa6hZNAa9LEa/sqraN7NX0cgcAjCRQmAfF7VljcTdR7ESsZaasxFOrv2KDnqzNW3mm7p9kg==}
+  '@nextclaw/app-runtime@file:vendor/nextclaw-agent/nextclaw-app-runtime-0.16.9.tgz':
+    resolution: {integrity: sha512-1M/pHVPaSdf2UaeuCOMLjeqqwmlJhKuwOwWSfrD6lrVkurb00aCUiWBv0591l+0CPgC0VM5OPCkBLGN96Ykjrg==, tarball: file:vendor/nextclaw-agent/nextclaw-app-runtime-0.16.9.tgz}
+    version: 0.16.9
     hasBin: true
 
-  '@nextclaw/channel-extension-feishu@0.2.40':
-    resolution: {integrity: sha512-7qBII5yXZDBgKhMVLl01oGp5WbJWl9+G8kkY5KBWYEDs/fuqB6f0w5+CS0IR2Z8VpgwngUZcn2VJKzr7MJ4t+g==}
+  '@nextclaw/channel-extension-feishu@file:vendor/nextclaw-agent/nextclaw-channel-extension-feishu-0.2.40.tgz':
+    resolution: {integrity: sha512-TuCWNjAeay0WipPJsGmGdxZVZ5kTC6HBcOuBbOGb+QVLqSzdq2w/kLYl3/Qa6Zv94hEvs0Ivbe9M/3Q0+d0a3g==, tarball: file:vendor/nextclaw-agent/nextclaw-channel-extension-feishu-0.2.40.tgz}
+    version: 0.2.40
 
-  '@nextclaw/channel-extension-weixin@0.2.40':
-    resolution: {integrity: sha512-6U8m6aBIbfr9JBwsSOPFdzBn7KJnlK8bwIYv8yaZRL8+oSQw4O1ktIobnNdB4D3YYKcy1B9vwVDkVX38McXYFQ==}
+  '@nextclaw/channel-extension-weixin@file:vendor/nextclaw-agent/nextclaw-channel-extension-weixin-0.2.40.tgz':
+    resolution: {integrity: sha512-UuPsgCqmLiDeV8/JvK5eUDuHBCYv+55N6LxSjjhFdojv6X4N4VI0Jmb0fVMVCBHs5/C5Yk0NVLBTXvh7MWOuFg==, tarball: file:vendor/nextclaw-agent/nextclaw-channel-extension-weixin-0.2.40.tgz}
+    version: 0.2.40
 
-  '@nextclaw/core@0.18.3':
-    resolution: {integrity: sha512-f7ol16LP6G9+P63DA55tHW4LO0oQXNkqjMswGF2V2sYpUZgrSRPoD4czoIZm2JTjNaQMs57xtEOB7o7gIoTGcg==}
+  '@nextclaw/core@file:vendor/nextclaw-agent/nextclaw-core-0.18.3.tgz':
+    resolution: {integrity: sha512-9rXddIB1U8NXDWJNonc6nh1W+iOrSZXtwqY/MdMLX8AFxFov2t686UuH797uQxwkHtwTCTQs9SF7IBBbD8pTwA==, tarball: file:vendor/nextclaw-agent/nextclaw-core-0.18.3.tgz}
+    version: 0.18.3
 
-  '@nextclaw/extension-sdk@0.5.9':
-    resolution: {integrity: sha512-gJ/p4CDsPpSvyF8MbucbbFl45Enyn690Q+8p7NOl+PSKsaUcR+vV2DYXSo9Yh4HGhwJVxl0V0kDxA2kL1F6/FQ==}
+  '@nextclaw/extension-sdk@file:vendor/nextclaw-agent/nextclaw-extension-sdk-0.5.9.tgz':
+    resolution: {integrity: sha512-mZs9zx51wkj+7iuRdLLba6Lv/vcm97f+vFC5InXvF2tSgJqdfoqbmzX4KFbQF9cgZMZBUJKzHbG3RTDkOxQ+uw==, tarball: file:vendor/nextclaw-agent/nextclaw-extension-sdk-0.5.9.tgz}
+    version: 0.5.9
 
-  '@nextclaw/feishu-core@0.3.13':
-    resolution: {integrity: sha512-bb7pa+oqj5acL3dvTwyYAAp1A2c1TWlcFYJEpE6Z0xMiiiInTF5ifaKhgkjXM38pfmGx3PGUHKGgAwIkHGlavg==}
+  '@nextclaw/feishu-core@file:vendor/nextclaw-agent/nextclaw-feishu-core-0.3.13.tgz':
+    resolution: {integrity: sha512-QK1jmPWydefN+fdNZiAm7t5LfzlGBApgdAFu56cpGKfEV36xqPJufCfi+WtbbPDR5DJ3WsC34CRm8gVRheCn6g==, tarball: file:vendor/nextclaw-agent/nextclaw-feishu-core-0.3.13.tgz}
+    version: 0.3.13
 
-  '@nextclaw/harness@0.2.24':
-    resolution: {integrity: sha512-fOASoNLRkIdun1v2bLpYWwkQE5TnUCE88ZATY4dCm8CnLCJ8lgq+jy49nO1UOYAAP1nzp/1SUv4crFkOD0OcAw==}
+  '@nextclaw/harness@file:vendor/nextclaw-agent/nextclaw-harness-0.2.24.tgz':
+    resolution: {integrity: sha512-RGNV6j++Sm49EDPnXoqWUNoy5Z9+p++9zN6bNpg7zOmJmG7ziAg76P3W5afHNg/6WW4BoJMtBZfhb/uh/DoiNA==, tarball: file:vendor/nextclaw-agent/nextclaw-harness-0.2.24.tgz}
+    version: 0.2.24
 
-  '@nextclaw/kernel@0.18.4':
-    resolution: {integrity: sha512-tr7Ce2BWKyk0ZfO/4t4DBTjry139nz1dhsGkiJK0SLlnCC5bhqkplnBvMYGvI8tRa72h827TWpoalOocE76JxQ==}
+  '@nextclaw/kernel@file:vendor/nextclaw-agent/nextclaw-kernel-0.18.4.tgz':
+    resolution: {integrity: sha512-n9q7pi3uE3Sy3OMn0qZ47aCSGmr3xMIAO/Sqm2PncTzbQ8IsQH5S4T4SklDfiq7lVZG6LW3+dBVbMs/lUa8p4Q==, tarball: file:vendor/nextclaw-agent/nextclaw-kernel-0.18.4.tgz}
+    version: 0.18.4
 
-  '@nextclaw/mcp@0.3.53':
-    resolution: {integrity: sha512-OzZPc3eocEF/E1wtPfz/iQQsBW9++lERx5ZnrodfqTtglslTX0xgHkgcR1Ou1mDmIZXDzABHtmf9Ii9trLrqiA==}
+  '@nextclaw/mcp@file:vendor/nextclaw-agent/nextclaw-mcp-0.3.53.tgz':
+    resolution: {integrity: sha512-203e7Uokh4aHWke9SKVYe1z7g7KbffhR1xoK2xClVa/BhtWEL4hWR8eu1OeCbTVL0LTedyNzPjb7QpR7iwtLhA==, tarball: file:vendor/nextclaw-agent/nextclaw-mcp-0.3.53.tgz}
+    version: 0.3.53
 
-  '@nextclaw/ncp-agent-runtime-next@0.1.28':
-    resolution: {integrity: sha512-6RPbJyHJuqVBCyzfcsgh1GMvCXBVuDJQh4z3rTRxx4rRn8waZuPdiMJEnjCoamhvMz17/sDRl/WuYuPxojJgfg==}
+  '@nextclaw/ncp-agent-runtime-next@file:vendor/nextclaw-agent/nextclaw-ncp-agent-runtime-next-0.1.28.tgz':
+    resolution: {integrity: sha512-WxUunXos77bFWHrDr79Wda4Sqxt/HwLmBTpgK8egPZ53Jv9viTrLltkDDo0AzleETwJc1zGIVmkJHxRMj8MVYw==, tarball: file:vendor/nextclaw-agent/nextclaw-ncp-agent-runtime-next-0.1.28.tgz}
+    version: 0.1.28
 
-  '@nextclaw/ncp-agent-runtime@0.4.26':
-    resolution: {integrity: sha512-4R5qKtwY9QXSv/qaNco/LUNhkTedLTXe+aAvneEh0i1aXq6zghHdfrMfJYg0L9447McJS9IXWJlJumwB/UwO9g==}
+  '@nextclaw/ncp-agent-runtime@file:vendor/nextclaw-agent/nextclaw-ncp-agent-runtime-0.4.26.tgz':
+    resolution: {integrity: sha512-swjzw1Np+cDPqRcfn767v6iSrwYsiqqKebl4wJTnO6Cu/HWNmC8umkB0fOWvH1cGzGqS0MBn7g+Q2F+pUBncrw==, tarball: file:vendor/nextclaw-agent/nextclaw-ncp-agent-runtime-0.4.26.tgz}
+    version: 0.4.26
 
-  '@nextclaw/ncp-http-agent-client@0.4.25':
-    resolution: {integrity: sha512-wJcWaHtWf2sGEX+vhsPSE9SmgmGE6Qu8z3L/xbcvQTOqh0Il3TJebuC/2AQjcC9oIFK76JhVuNo+I4PaCgolKw==}
+  '@nextclaw/ncp-http-agent-client@file:vendor/nextclaw-agent/nextclaw-ncp-http-agent-client-0.4.25.tgz':
+    resolution: {integrity: sha512-mjanrfwg9njD4YLU/8miqoUZW/ttgTdscBaOAmMoOHS7gJbB/ofUCjvjET9JQSLH0/JbUuv/na1z1oC3ZFRc5Q==, tarball: file:vendor/nextclaw-agent/nextclaw-ncp-http-agent-client-0.4.25.tgz}
+    version: 0.4.25
 
-  '@nextclaw/ncp-mcp@0.2.53':
-    resolution: {integrity: sha512-sH9ksmz3Jav54rningAcRptmPDakuCLa08CNm9Cyktudhh6ufTB9FwTCy+YbP3FpNC1SlfB7UEnh+nZ/cpLulw==}
+  '@nextclaw/ncp-mcp@file:vendor/nextclaw-agent/nextclaw-ncp-mcp-0.2.53.tgz':
+    resolution: {integrity: sha512-H9tcc6KHs4xzufPDV+ht4mm5Y6SQZyGJvfvSz5MVoGHf1obki0a4er1b4jN0tjwNTUlaP7Y4AiCdTtynC0g3sg==, tarball: file:vendor/nextclaw-agent/nextclaw-ncp-mcp-0.2.53.tgz}
+    version: 0.2.53
 
-  '@nextclaw/ncp-toolkit@0.6.27':
-    resolution: {integrity: sha512-sUMW1SN/vuTopMaZKyABKQDWgczkvu9g8hQKXcoUg9fW2Cbsg0SyDdH3SwWXXqmGy6RtKcU8v3DfrXjeRsrJbA==}
+  '@nextclaw/ncp-toolkit@file:vendor/nextclaw-agent/nextclaw-ncp-toolkit-0.6.27.tgz':
+    resolution: {integrity: sha512-cDAehbeK1BjKf1ElP24EMTuq+KsjfS5uj/vMCostlR7NaC5gjx0Poxh/sROiUSJPZIMJP2NnYTJTNiNN8vArrQ==, tarball: file:vendor/nextclaw-agent/nextclaw-ncp-toolkit-0.6.27.tgz}
+    version: 0.6.27
 
-  '@nextclaw/ncp@0.11.2':
-    resolution: {integrity: sha512-5C+PkF5JRtnjPjiRm/yh3XpIZU6+s8wELMNO6al0L/sZiPogtpVbKaftvRRAeKF1gUmvGIaSyPpoeREu3WmsiQ==}
+  '@nextclaw/ncp@file:vendor/nextclaw-agent/nextclaw-ncp-0.11.2.tgz':
+    resolution: {integrity: sha512-Mxg8sFf6mjHW61TtuDlMjjAgm775i0YhEcF3sllxXW5UPyk6H0Ih6qF4XgHM2u8HwQv8vfbnzQEUO5G15JVAig==, tarball: file:vendor/nextclaw-agent/nextclaw-ncp-0.11.2.tgz}
+    version: 0.11.2
 
-  '@nextclaw/nextclaw-ncp-runtime-http-client@0.3.25':
-    resolution: {integrity: sha512-M/pqnnSZhI7/kUBZhlc4c9G52GQZ6Snoifnt117oh522G1Ie5qvpKlT8FjsDUjfvmLpXh8D6p0MPlED65rsnIw==}
+  '@nextclaw/nextclaw-ncp-runtime-http-client@file:vendor/nextclaw-agent/nextclaw-nextclaw-ncp-runtime-http-client-0.3.25.tgz':
+    resolution: {integrity: sha512-dezGAUKW7qZRbORMoRNOcL4/un0v9lmTcmJV+Zx1m7ZGRhZM021tG5mdtoztysGy/q2RZsqPG2lUZbWAoOJUKw==, tarball: file:vendor/nextclaw-agent/nextclaw-nextclaw-ncp-runtime-http-client-0.3.25.tgz}
+    version: 0.3.25
 
-  '@nextclaw/nextclaw-ncp-runtime-stdio-client@0.3.53':
-    resolution: {integrity: sha512-lW72/8WeYQd6+3AjTOK9BqBFeaoA4tytxy5nvpFfKgw8wWZPZtRiIbEIjHOmgk4bAATRpHNt/vYZoIjKBkm5Rw==}
+  '@nextclaw/nextclaw-ncp-runtime-stdio-client@file:vendor/nextclaw-agent/nextclaw-nextclaw-ncp-runtime-stdio-client-0.3.53.tgz':
+    resolution: {integrity: sha512-JKMl3bKENBwoOYsyDCx22StbumgsV67rP7MhnEb3IwWud4c/tl7WQa1yO84JWr//uEf3ozaUZrMewnf2fNvVbw==, tarball: file:vendor/nextclaw-agent/nextclaw-nextclaw-ncp-runtime-stdio-client-0.3.53.tgz}
+    version: 0.3.53
 
-  '@nextclaw/runtime@0.4.52':
-    resolution: {integrity: sha512-h2xtNXtNRn50uPr9OlsA6l7QYchra02PoY3j8X3sDDAYnsDpQWGlOpnuDEP3PhBFb7BReoIqXu2f5JrLQuKezg==}
+  '@nextclaw/runtime@file:vendor/nextclaw-agent/nextclaw-runtime-0.4.52.tgz':
+    resolution: {integrity: sha512-RVuIny43AvmzHZ5IHxM6xKt37WXVcKdNb14o4EXP0nY8TBQv4ZTpkoL+Q2cj+N8K413zrm5vyJnpz/qhmpxO2w==, tarball: file:vendor/nextclaw-agent/nextclaw-runtime-0.4.52.tgz}
+    version: 0.4.52
 
-  '@nextclaw/shared@0.8.2':
-    resolution: {integrity: sha512-tTscu8pJ+Cin80MGExXJCqt1Dtw2+qA0EbtYHYDYek1RJt+OmkNi3p+5QypTCBMvDXCfynI+g62LuIXWAuwrXg==}
+  '@nextclaw/shared@file:vendor/nextclaw-agent/nextclaw-shared-0.8.2.tgz':
+    resolution: {integrity: sha512-O4Ztc72LrV25SiZtlaRZ+7V5ic0W+ShTpVyTbHlGsbOBU4iA2OMkQYg6nk/ug/rSxHqh7H9Q8Q6y9ESnQNw7kA==, tarball: file:vendor/nextclaw-agent/nextclaw-shared-0.8.2.tgz}
+    version: 0.8.2
 
   '@pinojs/redact@0.4.0':
     resolution: {integrity: sha512-k2ENnmBugE/rzQfEcdWHcCY+/FM3VLzH9cYEsbdsoqrvzAKRhUZeRNhAZvB8OitQJ1TBed3yqWtdjzS6wJKBwg==}
@@ -1893,8 +1932,8 @@ packages:
     resolution: {integrity: sha512-T2UbfbBEF32wiepXIsMlTW9+dDYC6wMh/t/vYA4tuOMKqWz/n3vr1NFSxQiyP+zk2mXsoMA/i/7qV6LKut1t1A==}
     engines: {node: '>= 0.4'}
 
-  hono@4.13.8:
-    resolution: {integrity: sha512-/Gng7NfoykZl2pjukW5Z6+8Yxm3BPRf86GTbQnt0SbySkvax4fyL4H3HhY1cCpBGmiW9XDRFzRV+CXK2W8QudQ==}
+  hono@4.13.9:
+    resolution: {integrity: sha512-7dMkQmZoC4E6F7AtaQSPhlWAdnBti+j7rreMZl8QB4jFiEhP9TWbGWUMi8WYzBCgmgulxuvLQupKqo+Co6Omyg==}
     engines: {node: '>=16.9.0'}
 
   http-errors@2.0.1:
@@ -2597,18 +2636,6 @@ packages:
       utf-8-validate:
         optional: true
 
-  ws@8.21.3:
-    resolution: {integrity: sha512-201TZ/kPWxoPr/OKWjquZR1SWKXcvxdH+e1xrx89b3YbmzLMFCLfnaG1HFIgWzJOEWZ7MvpK++odZufgYR50Rw==}
-    engines: {node: '>=10.0.0'}
-    peerDependencies:
-      bufferutil: ^4.0.1
-      utf-8-validate: '>=5.0.2'
-    peerDependenciesMeta:
-      bufferutil:
-        optional: true
-      utf-8-validate:
-        optional: true
-
   y18n@5.0.8:
     resolution: {integrity: sha512-0pfFzegeDWJHJIAmTLRP2DwHjdF5s7jo9tuztdQxAhINCdvS+3nGINqPd00AphqJR/0LhANUS6/+7SCb98YOfA==}
     engines: {node: '>=10'}
@@ -3079,9 +3106,9 @@ snapshots:
       '@eslint/core': 0.17.0
       levn: 0.4.1
 
-  '@hono/node-server@2.1.1(hono@4.13.8)':
+  '@hono/node-server@2.1.1(hono@4.13.9)':
     dependencies:
-      hono: 4.13.8
+      hono: 4.13.9
 
   '@humanfs/core@0.19.2':
     dependencies:
@@ -3331,16 +3358,16 @@ snapshots:
       lodash.pickby: 4.6.0
       protobufjs: 7.6.6
       qs: 6.16.0
-      ws: 8.21.3
+      ws: 8.21.0
     transitivePeerDependencies:
       - bufferutil
       - debug
       - supports-color
       - utf-8-validate
 
-  '@modelcontextprotocol/sdk@1.30.0(zod@3.25.76)':
+  '@modelcontextprotocol/sdk@1.30.1(zod@3.25.76)':
     dependencies:
-      '@hono/node-server': 2.1.1(hono@4.13.8)
+      '@hono/node-server': 2.1.1(hono@4.13.9)
       ajv: 8.20.0
       ajv-formats: 3.0.1(ajv@8.20.0)
       content-type: 1.0.5
@@ -3350,7 +3377,7 @@ snapshots:
       eventsource-parser: 3.1.1
       express: 5.2.1
       express-rate-limit: 8.7.0(express@5.2.1)
-      hono: 4.13.8
+      hono: 4.13.9
       jose: 6.2.12
       json-schema-typed: 8.0.2
       pkce-challenge: 5.0.1
@@ -3363,45 +3390,46 @@ snapshots:
   '@napi-rs/lzma-linux-x64-gnu@1.5.1':
     optional: true
 
-  '@nextclaw/app-runtime@0.16.9':
+  '@nextclaw/app-runtime@file:vendor/nextclaw-agent/nextclaw-app-runtime-0.16.9.tgz':
     dependencies:
-      '@nextclaw/shared': 0.8.2
+      '@nextclaw/shared': file:vendor/nextclaw-agent/nextclaw-shared-0.8.2.tgz
       fflate: 0.8.3
 
-  '@nextclaw/channel-extension-feishu@0.2.40':
+  '@nextclaw/channel-extension-feishu@file:vendor/nextclaw-agent/nextclaw-channel-extension-feishu-0.2.40.tgz':
     dependencies:
       '@larksuiteoapi/node-sdk': 1.74.0
-      '@nextclaw/extension-sdk': 0.5.9
-      '@nextclaw/ncp': 0.11.2
-      '@nextclaw/ncp-toolkit': 0.6.27
+      '@nextclaw/extension-sdk': file:vendor/nextclaw-agent/nextclaw-extension-sdk-0.5.9.tgz
+      '@nextclaw/ncp': file:vendor/nextclaw-agent/nextclaw-ncp-0.11.2.tgz
+      '@nextclaw/ncp-toolkit': file:vendor/nextclaw-agent/nextclaw-ncp-toolkit-0.6.27.tgz
     transitivePeerDependencies:
       - bufferutil
       - debug
       - supports-color
       - utf-8-validate
 
-  '@nextclaw/channel-extension-weixin@0.2.40':
+  '@nextclaw/channel-extension-weixin@file:vendor/nextclaw-agent/nextclaw-channel-extension-weixin-0.2.40.tgz':
     dependencies:
-      '@nextclaw/extension-sdk': 0.5.9
-      '@nextclaw/ncp': 0.11.2
-      '@nextclaw/ncp-toolkit': 0.6.27
+      '@nextclaw/extension-sdk': file:vendor/nextclaw-agent/nextclaw-extension-sdk-0.5.9.tgz
+      '@nextclaw/ncp': file:vendor/nextclaw-agent/nextclaw-ncp-0.11.2.tgz
+      '@nextclaw/ncp-toolkit': file:vendor/nextclaw-agent/nextclaw-ncp-toolkit-0.6.27.tgz
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
 
-  '@nextclaw/core@0.18.3(ws@8.21.3)':
+  '@nextclaw/core@file:vendor/nextclaw-agent/nextclaw-core-0.18.3.tgz(ws@8.21.0)':
     dependencies:
-      '@nextclaw/feishu-core': 0.3.13
-      '@nextclaw/shared': 0.8.2
+      '@nextclaw/feishu-core': file:vendor/nextclaw-agent/nextclaw-feishu-core-0.3.13.tgz
+      '@nextclaw/shared': file:vendor/nextclaw-agent/nextclaw-shared-0.8.2.tgz
       chokidar: 3.6.0
       commander: 12.1.0
       cron-parser: 4.9.0
       dotenv: 16.6.1
-      openai: 4.104.0(ws@8.21.3)(zod@3.25.76)
+      openai: 4.104.0(ws@8.21.0)(zod@3.25.76)
       pino: 9.14.0
       sharp: 0.34.5
       socket.io-msgpack-parser: 3.0.2
       undici: 6.28.1
+      yaml: 2.9.1
       zod: 3.25.76
       zod-to-json-schema: 3.25.2(zod@3.25.76)
     transitivePeerDependencies:
@@ -3412,16 +3440,16 @@ snapshots:
       - utf-8-validate
       - ws
 
-  '@nextclaw/extension-sdk@0.5.9':
+  '@nextclaw/extension-sdk@file:vendor/nextclaw-agent/nextclaw-extension-sdk-0.5.9.tgz':
     dependencies:
-      '@nextclaw/ncp': 0.11.2
-      '@nextclaw/shared': 0.8.2
-      ws: 8.21.3
+      '@nextclaw/ncp': file:vendor/nextclaw-agent/nextclaw-ncp-0.11.2.tgz
+      '@nextclaw/shared': file:vendor/nextclaw-agent/nextclaw-shared-0.8.2.tgz
+      ws: 8.21.0
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
 
-  '@nextclaw/feishu-core@0.3.13':
+  '@nextclaw/feishu-core@file:vendor/nextclaw-agent/nextclaw-feishu-core-0.3.13.tgz':
     dependencies:
       '@larksuiteoapi/node-sdk': 1.74.0
       zod: 3.25.76
@@ -3431,9 +3459,9 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@nextclaw/harness@0.2.24(ws@8.21.3)(zod@3.25.76)':
+  '@nextclaw/harness@file:vendor/nextclaw-agent/nextclaw-harness-0.2.24.tgz(ws@8.21.0)(zod@3.25.76)':
     dependencies:
-      '@nextclaw/kernel': 0.18.4(ws@8.21.3)(zod@3.25.76)
+      '@nextclaw/kernel': file:vendor/nextclaw-agent/nextclaw-kernel-0.18.4.tgz(ws@8.21.0)(zod@3.25.76)
     transitivePeerDependencies:
       - '@cfworker/json-schema'
       - bufferutil
@@ -3444,25 +3472,24 @@ snapshots:
       - ws
       - zod
 
-  '@nextclaw/kernel@0.18.4(ws@8.21.3)(zod@3.25.76)':
+  '@nextclaw/kernel@file:vendor/nextclaw-agent/nextclaw-kernel-0.18.4.tgz(ws@8.21.0)(zod@3.25.76)':
     dependencies:
-      '@nextclaw/app-runtime': 0.16.9
-      '@nextclaw/channel-extension-feishu': 0.2.40
-      '@nextclaw/channel-extension-weixin': 0.2.40
-      '@nextclaw/core': 0.18.3(ws@8.21.3)
-      '@nextclaw/mcp': 0.3.53(ws@8.21.3)(zod@3.25.76)
-      '@nextclaw/ncp': 0.11.2
-      '@nextclaw/ncp-agent-runtime': 0.4.26
-      '@nextclaw/ncp-agent-runtime-next': 0.1.28
-      '@nextclaw/ncp-mcp': 0.2.53(ws@8.21.3)(zod@3.25.76)
-      '@nextclaw/ncp-toolkit': 0.6.27
-      '@nextclaw/nextclaw-ncp-runtime-http-client': 0.3.25
-      '@nextclaw/nextclaw-ncp-runtime-stdio-client': 0.3.53(ws@8.21.3)(zod@3.25.76)
-      '@nextclaw/runtime': 0.4.52(ws@8.21.3)
-      '@nextclaw/shared': 0.8.2
+      '@nextclaw/app-runtime': file:vendor/nextclaw-agent/nextclaw-app-runtime-0.16.9.tgz
+      '@nextclaw/channel-extension-feishu': file:vendor/nextclaw-agent/nextclaw-channel-extension-feishu-0.2.40.tgz
+      '@nextclaw/channel-extension-weixin': file:vendor/nextclaw-agent/nextclaw-channel-extension-weixin-0.2.40.tgz
+      '@nextclaw/core': file:vendor/nextclaw-agent/nextclaw-core-0.18.3.tgz(ws@8.21.0)
+      '@nextclaw/mcp': file:vendor/nextclaw-agent/nextclaw-mcp-0.3.53.tgz(ws@8.21.0)(zod@3.25.76)
+      '@nextclaw/ncp': file:vendor/nextclaw-agent/nextclaw-ncp-0.11.2.tgz
+      '@nextclaw/ncp-agent-runtime': file:vendor/nextclaw-agent/nextclaw-ncp-agent-runtime-0.4.26.tgz
+      '@nextclaw/ncp-agent-runtime-next': file:vendor/nextclaw-agent/nextclaw-ncp-agent-runtime-next-0.1.28.tgz
+      '@nextclaw/ncp-mcp': file:vendor/nextclaw-agent/nextclaw-ncp-mcp-0.2.53.tgz(ws@8.21.0)(zod@3.25.76)
+      '@nextclaw/ncp-toolkit': file:vendor/nextclaw-agent/nextclaw-ncp-toolkit-0.6.27.tgz
+      '@nextclaw/nextclaw-ncp-runtime-http-client': file:vendor/nextclaw-agent/nextclaw-nextclaw-ncp-runtime-http-client-0.3.25.tgz
+      '@nextclaw/nextclaw-ncp-runtime-stdio-client': file:vendor/nextclaw-agent/nextclaw-nextclaw-ncp-runtime-stdio-client-0.3.53.tgz(ws@8.21.0)(zod@3.25.76)
+      '@nextclaw/runtime': file:vendor/nextclaw-agent/nextclaw-runtime-0.4.52.tgz(ws@8.21.0)
+      '@nextclaw/shared': file:vendor/nextclaw-agent/nextclaw-shared-0.8.2.tgz
       rxjs: 7.8.2
       sql.js: 1.14.2
-      yaml: 2.9.1
     transitivePeerDependencies:
       - '@cfworker/json-schema'
       - bufferutil
@@ -3473,10 +3500,10 @@ snapshots:
       - ws
       - zod
 
-  '@nextclaw/mcp@0.3.53(ws@8.21.3)(zod@3.25.76)':
+  '@nextclaw/mcp@file:vendor/nextclaw-agent/nextclaw-mcp-0.3.53.tgz(ws@8.21.0)(zod@3.25.76)':
     dependencies:
-      '@modelcontextprotocol/sdk': 1.30.0(zod@3.25.76)
-      '@nextclaw/core': 0.18.3(ws@8.21.3)
+      '@modelcontextprotocol/sdk': 1.30.1(zod@3.25.76)
+      '@nextclaw/core': file:vendor/nextclaw-agent/nextclaw-core-0.18.3.tgz(ws@8.21.0)
       undici: 6.28.1
     transitivePeerDependencies:
       - '@cfworker/json-schema'
@@ -3488,24 +3515,24 @@ snapshots:
       - ws
       - zod
 
-  '@nextclaw/ncp-agent-runtime-next@0.1.28':
+  '@nextclaw/ncp-agent-runtime-next@file:vendor/nextclaw-agent/nextclaw-ncp-agent-runtime-next-0.1.28.tgz':
     dependencies:
-      '@nextclaw/ncp': 0.11.2
-      '@nextclaw/ncp-agent-runtime': 0.4.26
+      '@nextclaw/ncp': file:vendor/nextclaw-agent/nextclaw-ncp-0.11.2.tgz
+      '@nextclaw/ncp-agent-runtime': file:vendor/nextclaw-agent/nextclaw-ncp-agent-runtime-0.4.26.tgz
 
-  '@nextclaw/ncp-agent-runtime@0.4.26':
+  '@nextclaw/ncp-agent-runtime@file:vendor/nextclaw-agent/nextclaw-ncp-agent-runtime-0.4.26.tgz':
     dependencies:
-      '@nextclaw/ncp': 0.11.2
+      '@nextclaw/ncp': file:vendor/nextclaw-agent/nextclaw-ncp-0.11.2.tgz
       ajv: 8.20.0
 
-  '@nextclaw/ncp-http-agent-client@0.4.25':
+  '@nextclaw/ncp-http-agent-client@file:vendor/nextclaw-agent/nextclaw-ncp-http-agent-client-0.4.25.tgz':
     dependencies:
-      '@nextclaw/ncp': 0.11.2
+      '@nextclaw/ncp': file:vendor/nextclaw-agent/nextclaw-ncp-0.11.2.tgz
 
-  '@nextclaw/ncp-mcp@0.2.53(ws@8.21.3)(zod@3.25.76)':
+  '@nextclaw/ncp-mcp@file:vendor/nextclaw-agent/nextclaw-ncp-mcp-0.2.53.tgz(ws@8.21.0)(zod@3.25.76)':
     dependencies:
-      '@nextclaw/mcp': 0.3.53(ws@8.21.3)(zod@3.25.76)
-      '@nextclaw/ncp': 0.11.2
+      '@nextclaw/mcp': file:vendor/nextclaw-agent/nextclaw-mcp-0.3.53.tgz(ws@8.21.0)(zod@3.25.76)
+      '@nextclaw/ncp': file:vendor/nextclaw-agent/nextclaw-ncp-0.11.2.tgz
     transitivePeerDependencies:
       - '@cfworker/json-schema'
       - bufferutil
@@ -3516,23 +3543,23 @@ snapshots:
       - ws
       - zod
 
-  '@nextclaw/ncp-toolkit@0.6.27':
+  '@nextclaw/ncp-toolkit@file:vendor/nextclaw-agent/nextclaw-ncp-toolkit-0.6.27.tgz':
     dependencies:
-      '@nextclaw/ncp': 0.11.2
+      '@nextclaw/ncp': file:vendor/nextclaw-agent/nextclaw-ncp-0.11.2.tgz
 
-  '@nextclaw/ncp@0.11.2': {}
+  '@nextclaw/ncp@file:vendor/nextclaw-agent/nextclaw-ncp-0.11.2.tgz': {}
 
-  '@nextclaw/nextclaw-ncp-runtime-http-client@0.3.25':
+  '@nextclaw/nextclaw-ncp-runtime-http-client@file:vendor/nextclaw-agent/nextclaw-nextclaw-ncp-runtime-http-client-0.3.25.tgz':
     dependencies:
-      '@nextclaw/ncp': 0.11.2
-      '@nextclaw/ncp-http-agent-client': 0.4.25
+      '@nextclaw/ncp': file:vendor/nextclaw-agent/nextclaw-ncp-0.11.2.tgz
+      '@nextclaw/ncp-http-agent-client': file:vendor/nextclaw-agent/nextclaw-ncp-http-agent-client-0.4.25.tgz
 
-  '@nextclaw/nextclaw-ncp-runtime-stdio-client@0.3.53(ws@8.21.3)(zod@3.25.76)':
+  '@nextclaw/nextclaw-ncp-runtime-stdio-client@file:vendor/nextclaw-agent/nextclaw-nextclaw-ncp-runtime-stdio-client-0.3.53.tgz(ws@8.21.0)(zod@3.25.76)':
     dependencies:
       '@agentclientprotocol/sdk': 0.19.2(zod@3.25.76)
-      '@nextclaw/core': 0.18.3(ws@8.21.3)
-      '@nextclaw/ncp': 0.11.2
-      '@nextclaw/ncp-toolkit': 0.6.27
+      '@nextclaw/core': file:vendor/nextclaw-agent/nextclaw-core-0.18.3.tgz(ws@8.21.0)
+      '@nextclaw/ncp': file:vendor/nextclaw-agent/nextclaw-ncp-0.11.2.tgz
+      '@nextclaw/ncp-toolkit': file:vendor/nextclaw-agent/nextclaw-ncp-toolkit-0.6.27.tgz
     transitivePeerDependencies:
       - bufferutil
       - debug
@@ -3542,9 +3569,9 @@ snapshots:
       - ws
       - zod
 
-  '@nextclaw/runtime@0.4.52(ws@8.21.3)':
+  '@nextclaw/runtime@file:vendor/nextclaw-agent/nextclaw-runtime-0.4.52.tgz(ws@8.21.0)':
     dependencies:
-      '@nextclaw/core': 0.18.3(ws@8.21.3)
+      '@nextclaw/core': file:vendor/nextclaw-agent/nextclaw-core-0.18.3.tgz(ws@8.21.0)
     transitivePeerDependencies:
       - bufferutil
       - debug
@@ -3553,9 +3580,9 @@ snapshots:
       - utf-8-validate
       - ws
 
-  '@nextclaw/shared@0.8.2':
+  '@nextclaw/shared@file:vendor/nextclaw-agent/nextclaw-shared-0.8.2.tgz':
     dependencies:
-      '@nextclaw/ncp': 0.11.2
+      '@nextclaw/ncp': file:vendor/nextclaw-agent/nextclaw-ncp-0.11.2.tgz
 
   '@pinojs/redact@0.4.0': {}
 
@@ -4407,7 +4434,7 @@ snapshots:
     dependencies:
       function-bind: 1.1.2
 
-  hono@4.13.8: {}
+  hono@4.13.9: {}
 
   http-errors@2.0.1:
     dependencies:
@@ -4593,7 +4620,7 @@ snapshots:
     dependencies:
       wrappy: 1.0.2
 
-  openai@4.104.0(ws@8.21.3)(zod@3.25.76):
+  openai@4.104.0(ws@8.21.0)(zod@3.25.76):
     dependencies:
       '@types/node': 18.19.130
       '@types/node-fetch': 2.6.13
@@ -4603,7 +4630,7 @@ snapshots:
       formdata-node: 4.4.1
       node-fetch: 2.7.0
     optionalDependencies:
-      ws: 8.21.3
+      ws: 8.21.0
       zod: 3.25.76
     transitivePeerDependencies:
       - encoding
@@ -5107,8 +5134,6 @@ snapshots:
   wrappy@1.0.2: {}
 
   ws@8.21.0: {}
-
-  ws@8.21.3: {}
 
   y18n@5.0.8: {}
 

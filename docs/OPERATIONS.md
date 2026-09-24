@@ -11,6 +11,14 @@
 - 生产 unit 设置 `NODE_ENV=production`。自 `bef2fd8` 起，启动时若账号或任意一只精灵的状态文件缺失，进程会拒绝监听，不能靠自动新建空数据来“恢复”；先核对数据路径与挂载，按下方备份流程恢复，不能删除其余文件后重启。首次本地开发世界仍可显式初始化，生产不以此方式引导新世界。
 - 生产模型当前配置为 DeepSeek 正式 API 的 `deepseek/deepseek-flash`，通过 NextClaw Harness 的无宿主工具模型能力调用。Flash 的特定备案号尚未核实，不能沿用旧 Chat 模型号。当前公开版不具备自写代码、文件/命令/网络工具或 mini-app 沙箱；不能在产品文案中宣称这些已交付。
 
+### NextClaw Agent 待切换运行合同（2026-09-24，本机已验证，生产尚未部署）
+
+目标版本让三只共享 AI 分别使用稳定 NextClaw Agent ID、独立工作空间和真正的 `runTask`。公网访客只允许调用该 AI 的 `bibo_memory_read` / `bibo_memory_replace` 两个固定无路径工具；不得开放 NextClaw 默认的文件、命令、网络工具，斜杠命令亦关闭。长期文件位于 `BIBO_DATA_DIR/workspace/agents/<id>/`，共享笔记可能受访客影响；其他人的原始对话仍由世界状态单独管理，不因 Agent 工作空间存在就允许直接查询。
+
+每轮 Harness/session 的临时目录应位于 `BIBO_AGENT_RUNTIME_DIR` 下；目标 systemd unit 设置为 `/run/bibo-planet-agent`、0700，正常完成后销毁整轮 home。单删 session 不足以清除 SQLite WAL 中的原文。更新前必须先确认正式 SDK 依赖而非 `pnpm link`，执行 Bibo 专用加密备份并验证上传，再在 ECS 以 `bibo-planet` 身份检查 unit 对临时目录/持久工作空间的写权限、内存限制与凭据引用；运行受控测试账号的连续两轮及跨账号链路，检查报告 token、实际模型调用次数、无宿主工具调用和临时目录残留。新备份应包含 `workspace/agents`，精确取回、解密、隔离恢复后再算该范围可恢复；自然 timer 首次触发仍单独验收。任何一项失败，保留或回滚应用代码并保护数据，不把 model-only 旧版或仅有 `runTask` 的空工具运行宣布为最终 Agent 能力。
+
+本轮 SDK 部署快照固定在 `vendor/nextclaw-agent/` 的 19 个 tarball，全部为同一 NextClaw workspace 闭包；来源分支为 `codex/bibo-agent-tool-policy`，源码 SHA `651fe5b259178abb47d8c394b7b3840978c21e71`。`package.json` 的文件依赖/overrides 和 `pnpm-lock.yaml` 的完整性校验共同决定安装产物。发布前必须在干净环境执行 `pnpm install --frozen-lockfile` 并真实加载 Harness，禁止通过本机源码链接测试冒充安装验证。更新源码时要重新构建**整个匹配闭包**、重打包、核对 19 个 lock integrity，重新做干净安装和真实 Agent 冒烟；不要只替换 Kernel tarball，也不要把 tarball 与来源不一致的同名 NPM 版本混装。这是本轮暂不触发 NextClaw 全量 NPM 批次的固定快照，不是长期 SDK 发布制度。
+
 ## 日常健康检查
 
 1. 从外网确认 `https://planet.bibo.bot/`、`/api/world`、`/api/session` 返回 200。匿名访问 `/api/spirits/mori/conversation` 应为 401；直接访问 `https://nextclaw.net/__bibo/api/world` 而不带内部密钥应为 403。

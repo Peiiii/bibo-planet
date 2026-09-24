@@ -14,6 +14,7 @@ Environment=BIBO_OSSUTIL_PATH=/opt/bibo-ossutil-v2/bin/ossutil
 Environment=BIBO_DELETION_OSS_PREFIX=oss://bibo-planet-backups-peiiii-2026/deletions
 Environment=BIBO_DELETION_OSS_ENDPOINT=oss-cn-hangzhou-internal.aliyuncs.com
 Environment=BIBO_DELETION_OSS_REGION=cn-hangzhou
+Environment=BIBO_AGENT_RUNTIME_DIR=/run/bibo-planet-agent
 EnvironmentFile=/etc/bibo-planet/env
 ExecStart=/opt/bibo-node/bin/node --import tsx src/server/main.ts
 Restart=always
@@ -23,6 +24,9 @@ ProtectSystem=strict
 ProtectHome=yes
 PrivateTmp=yes
 PrivateDevices=yes
+RuntimeDirectory=bibo-planet-agent
+RuntimeDirectoryMode=0700
+RuntimeDirectoryPreserve=no
 RestrictSUIDSGID=yes
 LockPersonality=yes
 ReadWritePaths=/var/lib/bibo-planet /var/lib/bibo-planet-deletions
