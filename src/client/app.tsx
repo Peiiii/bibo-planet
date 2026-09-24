@@ -278,6 +278,12 @@ export function App() {
       setError(
         cause instanceof Error ? cause.message : "这次唤醒失败了，请再试一次",
       );
+      try {
+        const session = await api<{ account: Account | null }>("/api/session");
+        setAccount(session.account);
+      } catch {
+        // 会话检查也失败时，保留已有账号显示。
+      }
     } finally {
       setBusy(false);
     }
@@ -583,7 +589,8 @@ export function App() {
             )}
             {account && (
               <p className="quota-note">
-                今天还能唤醒 {account.remainingToday} 次 · 所有旅人共享这颗星球
+                今天还可尝试唤醒 {account.remainingToday} 次 ·
+                失败尝试也占用资源预算
               </p>
             )}
             {(error || worldError) && (

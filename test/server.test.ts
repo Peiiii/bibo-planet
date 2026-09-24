@@ -107,7 +107,7 @@ test("registered accounts isolate conversation lists, while both visitors can wa
   }
 });
 
-test("model failure returns an error without recording a turn or spending quota", async () => {
+test("model failure returns an error without recording a turn or successful usage", async () => {
   const dir = await mkdtemp(join(tmpdir(), "bibo-model-failure-test-"));
   const store = new WorldStore(dir);
   await store.initialize();
@@ -152,6 +152,9 @@ test("model failure returns an error without recording a turn or spending quota"
     assert.equal(store.world().spirits[0]!.energy, energyBefore);
     assert.equal(store.world().spirits[0]!.encounters, 0);
     assert.equal(auth.account(cookie.split("=")[1])?.remainingToday, 12);
+    const accountId = auth.account(cookie.split("=")[1])?.id;
+    assert.equal(auth.accountData(accountId!).attemptCount, 1);
+    assert.equal(auth.accountData(accountId!).usageCount, 0);
   } finally {
     await new Promise<void>((resolve) => server.close(() => resolve()));
     await rm(dir, { recursive: true, force: true });
@@ -229,6 +232,7 @@ test("personal data export uses only the cookie identity and excludes other trav
     assert.equal(archive.account.name, "alice");
     assert.equal(typeof archive.account.createdAt, "string");
     assert.equal(archive.account.usageCount, 2);
+    assert.equal(archive.account.attemptCount, 2);
     assert.equal(archive.spirits.length, 3);
     assert.deepEqual(
       archive.spirits.map(({ spirit, sharedEncounters }) => [

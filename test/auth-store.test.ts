@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
@@ -62,6 +62,168 @@ test("production account initialization refuses a missing data file", async () =
     await assert.rejects(new AuthStore(dir).initialize(true), /账号状态缺失/);
     await new AuthStore(dir).initialize();
     await new AuthStore(dir).initialize(true);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("failed model attempts consume a persisted attempt budget without claiming success", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "bibo-attempt-budget-test-"));
+  try {
+    const auth = new AuthStore(dir);
+    await auth.initialize();
+    const registered = await auth.register(
+      "尝试预算旅人",
+      "ten-characters-or-more",
+      "203.0.113.12",
+    );
+    let calls = 0;
+    for (let index = 0; index < 18; index += 1) {
+      await assert.rejects(
+        auth.withMessagePermit(registered.account.id, async () => {
+          calls += 1;
+          throw new Error("provider timeout");
+        }),
+        /provider timeout/,
+      );
+    }
+    assert.equal(calls, 18);
+    assert.equal(auth.accountData(registered.account.id).usageCount, 0);
+    assert.equal(auth.accountData(registered.account.id).attemptCount, 18);
+    assert.equal(auth.account(registered.token)?.remainingToday, 0);
+
+    const restarted = new AuthStore(dir);
+    await restarted.initialize();
+    await assert.rejects(
+      restarted.withMessagePermit(registered.account.id, async () => {
+        calls += 1;
+      }),
+      /尝试次数已用完/,
+    );
+    assert.equal(calls, 18);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("legacy account rows count prior successful messages as attempts", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "bibo-legacy-budget-test-"));
+  try {
+    const auth = new AuthStore(dir);
+    await auth.initialize();
+    const registered = await auth.register(
+      "旧账号旅人",
+      "ten-characters-or-more",
+      "203.0.113.13",
+    );
+    await auth.withMessagePermit(registered.account.id, async () => "ok");
+    const path = join(dir, "accounts.json");
+    const legacy = JSON.parse(await readFile(path, "utf8")) as {
+      accounts: Array<Record<string, unknown>>;
+    };
+    for (const account of legacy.accounts) {
+      delete account.attemptDay;
+      delete account.attemptCount;
+    }
+    await writeFile(path, JSON.stringify(legacy));
+    const restarted = new AuthStore(dir);
+    await restarted.initialize();
+    assert.equal(restarted.accountData(registered.account.id).attemptCount, 1);
+    assert.equal(restarted.account(registered.token)?.remainingToday, 11);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("same-account concurrency cannot reserve twice while a model call is in flight", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "bibo-concurrent-budget-test-"));
+  try {
+    const auth = new AuthStore(dir);
+    await auth.initialize();
+    const registered = await auth.register(
+      "并发预算旅人",
+      "ten-characters-or-more",
+      "203.0.113.14",
+    );
+    let finish!: () => void;
+    const pending = new Promise<void>((resolve) => {
+      finish = resolve;
+    });
+    const first = auth.withMessagePermit(registered.account.id, async () => {
+      await pending;
+    });
+    await assert.rejects(
+      auth.withMessagePermit(registered.account.id, async () => {
+        throw new Error("second model call should not run");
+      }),
+      /上一条消息/,
+    );
+    finish();
+    await first;
+    assert.equal(auth.accountData(registered.account.id).attemptCount, 1);
+    assert.equal(auth.accountData(registered.account.id).usageCount, 1);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("world attempt reservations stop at 240 across accounts", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "bibo-world-budget-test-"));
+  try {
+    const auth = new AuthStore(dir);
+    await auth.initialize();
+    let calls = 0;
+    let lastAccountId = "";
+    for (let index = 0; index < 20; index += 1) {
+      const account = await auth.register(
+        `额度旅人${index}`,
+        "ten-characters-or-more",
+        `203.0.113.${index + 30}`,
+      );
+      lastAccountId = account.account.id;
+      for (let turn = 0; turn < (index === 19 ? 11 : 12); turn += 1) {
+        await auth.withMessagePermit(account.account.id, async () => {
+          calls += 1;
+        });
+      }
+    }
+    assert.equal(calls, 239);
+    const competing = await auth.register(
+      "竞争旅人",
+      "ten-characters-or-more",
+      "203.0.113.59",
+    );
+    const results = await Promise.allSettled([
+      auth.withMessagePermit(lastAccountId, async () => {
+        calls += 1;
+      }),
+      auth.withMessagePermit(competing.account.id, async () => {
+        calls += 1;
+      }),
+    ]);
+    assert.equal(
+      results.filter((item) => item.status === "fulfilled").length,
+      1,
+    );
+    assert.equal(
+      results.filter((item) => item.status === "rejected").length,
+      1,
+    );
+    assert.equal(calls, 240);
+    const restarted = new AuthStore(dir);
+    await restarted.initialize();
+    const extra = await restarted.register(
+      "额外旅人",
+      "ten-characters-or-more",
+      "203.0.113.60",
+    );
+    await assert.rejects(
+      restarted.withMessagePermit(extra.account.id, async () => {
+        calls += 1;
+      }),
+      /星球今天需要休息/,
+    );
+    assert.equal(calls, 240);
   } finally {
     await rm(dir, { recursive: true, force: true });
   }

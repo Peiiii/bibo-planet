@@ -12,6 +12,7 @@ import { promisify } from "node:util";
 const scrypt = promisify(scryptCallback);
 const SESSION_DAYS = 30;
 const USER_DAILY_LIMIT = 12;
+const USER_DAILY_ATTEMPT_LIMIT = 18;
 const WORLD_DAILY_LIMIT = 240;
 
 type Account = {
@@ -22,6 +23,8 @@ type Account = {
   createdAt: string;
   usageDay: string;
   usageCount: number;
+  attemptDay?: string;
+  attemptCount?: number;
 };
 
 type Session = { accountId: string; expiresAt: number };
@@ -88,14 +91,17 @@ export class AuthStore {
         )
       )
         throw new AuthError(409, "这个昵称已经有人使用");
+      const today = dayKey();
       const account: Account = {
         id: randomUUID(),
         name: displayName,
         normalizedName,
         password: passwordHash,
         createdAt: new Date().toISOString(),
-        usageDay: dayKey(),
+        usageDay: today,
         usageCount: 0,
+        attemptDay: today,
+        attemptCount: 0,
       };
       const token = randomBytes(32).toString("base64url");
       const next: AuthState = {
@@ -158,13 +164,27 @@ export class AuthStore {
     return account ? this.view(account) : null;
   }
 
-  accountData(
-    accountId: string,
-  ): Pick<Account, "id" | "name" | "createdAt" | "usageDay" | "usageCount"> {
+  accountData(accountId: string): Pick<
+    Account,
+    "id" | "name" | "createdAt" | "usageDay" | "usageCount"
+  > & {
+    attemptDay: string;
+    attemptCount: number;
+  } {
     const account = this.state.accounts.find((item) => item.id === accountId);
     if (!account) throw new AuthError(401, "登录状态已失效");
     const { id, name, createdAt, usageDay, usageCount } = account;
-    return { id, name, createdAt, usageDay, usageCount };
+    return {
+      id,
+      name,
+      createdAt,
+      usageDay,
+      usageCount,
+      attemptDay: account.attemptDay ?? usageDay,
+      attemptCount: account.attemptDay
+        ? (account.attemptCount ?? 0)
+        : usageCount,
+    };
   }
 
   async logout(token: string | undefined): Promise<void> {
@@ -185,18 +205,36 @@ export class AuthStore {
     if (this.inFlight.has(accountId))
       throw new AuthError(429, "请等上一条消息完成后再发送");
     const today = dayKey();
-    const account = this.state.accounts.find((item) => item.id === accountId);
-    if (!account) throw new AuthError(401, "登录状态已失效");
-    if (account.usageDay === today && account.usageCount >= USER_DAILY_LIMIT)
-      throw new AuthError(429, "今天的唤醒次数已用完，明天再来看看它吧");
-    const worldUsed = this.state.accounts.reduce(
-      (sum, item) => sum + (item.usageDay === today ? item.usageCount : 0),
-      0,
-    );
-    if (worldUsed + this.inFlight.size >= WORLD_DAILY_LIMIT)
-      throw new AuthError(429, "星球今天需要休息，明天会再次开放");
     this.inFlight.add(accountId);
     try {
+      await this.serial(async () => {
+        const account = this.state.accounts.find(
+          (item) => item.id === accountId,
+        );
+        if (!account) throw new AuthError(401, "登录状态已失效");
+        if (
+          account.usageDay === today &&
+          account.usageCount >= USER_DAILY_LIMIT
+        )
+          throw new AuthError(429, "今天的唤醒次数已用完，明天再来看看它吧");
+        const attempts = this.attemptsToday(account, today);
+        if (attempts >= USER_DAILY_ATTEMPT_LIMIT)
+          throw new AuthError(429, "今天的唤醒尝试次数已用完，明天再来吧");
+        const worldAttempts = this.state.accounts.reduce(
+          (sum, item) => sum + this.attemptsToday(item, today),
+          0,
+        );
+        if (worldAttempts >= WORLD_DAILY_LIMIT)
+          throw new AuthError(429, "星球今天需要休息，明天会再次开放");
+        const accounts = this.state.accounts.map((item) =>
+          item.id === accountId
+            ? { ...item, attemptDay: today, attemptCount: attempts + 1 }
+            : item,
+        );
+        const next = { ...this.state, accounts };
+        await this.persist(next);
+        this.state = next;
+      });
       const result = await action();
       await this.serial(async () => {
         const accounts = this.state.accounts.map((item) =>
@@ -219,15 +257,26 @@ export class AuthStore {
   }
 
   private view(account: Account): AccountView {
+    const today = dayKey();
     return {
       id: account.id,
       name: account.name,
       remainingToday: Math.max(
         0,
-        USER_DAILY_LIMIT -
-          (account.usageDay === dayKey() ? account.usageCount : 0),
+        Math.min(
+          USER_DAILY_LIMIT -
+            (account.usageDay === today ? account.usageCount : 0),
+          USER_DAILY_ATTEMPT_LIMIT - this.attemptsToday(account, today),
+        ),
       ),
     };
+  }
+
+  private attemptsToday(account: Account, today: string): number {
+    return Math.max(
+      account.attemptDay === today ? (account.attemptCount ?? 0) : 0,
+      account.usageDay === today ? account.usageCount : 0,
+    );
   }
 
   private limitAttempts(key: string, count: number, windowMs: number): void {

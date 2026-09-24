@@ -76,6 +76,8 @@ export type PersonalDataArchive = {
     createdAt: string;
     usageDay: string;
     usageCount: number;
+    attemptDay: string;
+    attemptCount: number;
   };
   spirits: Array<{
     spirit: { id: SpiritId; name: string };
