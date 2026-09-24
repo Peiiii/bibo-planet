@@ -351,10 +351,10 @@ export class AuthStore {
           account.usageDay === today &&
           account.usageCount >= USER_DAILY_LIMIT
         )
-          throw new AuthError(429, "今天的唤醒次数已用完，明天再来看看它吧");
+          throw new AuthError(429, "今天的对话次数已用完，请明天再来");
         const attempts = this.attemptsToday(account, today);
         if (attempts >= USER_DAILY_ATTEMPT_LIMIT)
-          throw new AuthError(429, "今天的唤醒尝试次数已用完，明天再来吧");
+          throw new AuthError(429, "今天的对话尝试次数已用完，请明天再来");
         const worldAttempts =
           (this.state.worldAttemptCarry?.day === today
             ? this.state.worldAttemptCarry.count
@@ -364,7 +364,7 @@ export class AuthStore {
             0,
           );
         if (worldAttempts >= WORLD_DAILY_LIMIT)
-          throw new AuthError(429, "星球今天需要休息，明天会再次开放");
+          throw new AuthError(429, "今天的全站对话额度已用完，请明天再来");
         const accounts = this.state.accounts.map((item) =>
           item.id === accountId
             ? { ...item, attemptDay: today, attemptCount: attempts + 1 }

@@ -27,7 +27,7 @@ async function api<T>(path: string, options?: RequestInit): Promise<T> {
       ...options,
     });
   } catch {
-    throw new Error("星球暂时无法连接，请稍后重试。");
+    throw new Error("暂时无法连接服务，请稍后重试。");
   }
   const body = (await response.json()) as T & { error?: string };
   if (!response.ok)
@@ -50,7 +50,7 @@ class ApiError extends Error {
 type Account = { id: string; name: string; remainingToday: number };
 
 const sharedMemoryNotice =
-  "发送成功的内容会成为精灵的共同记忆；其他旅人可能从它的回应中得知。请勿输入隐私或秘密。";
+  "你发送的内容可能进入共享上下文，影响 AI 对其他用户的回答。请勿输入隐私或秘密。";
 
 function handleDialogKeys(
   event: KeyboardEvent<HTMLElement>,
@@ -82,21 +82,21 @@ export function activityLabel(
   lastEncounterAt: string | null,
   compact = false,
 ): string {
-  if (!lastEncounterAt) return compact ? "等待相遇" : "等待第一次相遇";
+  if (!lastEncounterAt) return compact ? "暂无对话" : "还没有对话";
   const minutes = Math.floor(
     (Date.now() - Date.parse(lastEncounterAt)) / 60_000,
   );
-  if (!Number.isFinite(minutes)) return compact ? "曾有相遇" : "曾有旅人来过";
-  if (minutes < 1) return compact ? "刚刚" : "刚刚有人来过";
+  if (!Number.isFinite(minutes)) return compact ? "已有对话" : "有人使用过";
+  if (minutes < 1) return compact ? "刚刚" : "刚刚有人对话";
   if (minutes < 60)
-    return compact ? `${minutes}分钟前` : `${minutes} 分钟前有人来过`;
+    return compact ? `${minutes}分钟前` : `${minutes} 分钟前有人对话`;
   if (minutes < 1_440)
     return compact
       ? `${Math.floor(minutes / 60)}小时前`
-      : `${Math.floor(minutes / 60)} 小时前有人来过`;
+      : `${Math.floor(minutes / 60)} 小时前有人对话`;
   return compact
     ? `${Math.floor(minutes / 1_440)}天前`
-    : `${Math.floor(minutes / 1_440)} 天前有人来过`;
+    : `${Math.floor(minutes / 1_440)} 天前有人对话`;
 }
 
 export function renderSpiritText(text: string) {
@@ -257,7 +257,7 @@ export function App() {
         .catch((cause: unknown) => {
           if (active && first)
             setWorldError(
-              cause instanceof Error ? cause.message : "星球暂时无法连接",
+              cause instanceof Error ? cause.message : "暂时无法连接服务",
             );
         })
         .finally(() => {
@@ -354,7 +354,7 @@ export function App() {
       });
     } catch (cause) {
       setError(
-        cause instanceof Error ? cause.message : "这次唤醒失败了，请再试一次",
+        cause instanceof Error ? cause.message : "这次对话失败了，请再试一次",
       );
       try {
         const session = await api<{ account: Account | null }>("/api/session");
@@ -387,9 +387,7 @@ export function App() {
       setAccount(result.account);
       closeAuth();
     } catch (cause) {
-      setAuthError(
-        cause instanceof Error ? cause.message : "进入星球失败，请重试",
-      );
+      setAuthError(cause instanceof Error ? cause.message : "登录失败，请重试");
     } finally {
       setAuthBusy(false);
     }
@@ -533,12 +531,12 @@ export function App() {
         </a>
         <div className="top-note">
           <span className="live-dot" />
-          一颗仍在生长的星球 <span className="top-number">· 001</span>
+          多人共享的 AI <span className="top-number">· BETA</span>
         </div>
         <div className="account-actions">
           {account ? (
             <>
-              <span>旅人 · {account.name}</span>
+              <span>用户 · {account.name}</span>
               <button
                 type="button"
                 onClick={openAccountData}
@@ -556,42 +554,44 @@ export function App() {
             </>
           ) : (
             <button type="button" onClick={() => setAuthOpen(true)}>
-              成为旅人 <span>↗</span>
+              注册 <span>↗</span>
             </button>
           )}
         </div>
       </header>
 
       <div className="layout">
-        <section className="world-panel" aria-label="精灵星球">
+        <section className="world-panel" aria-label="共享 AI">
           <div className="world-copy">
-            <p className="eyebrow">WELCOME TO THE UNOWNED WORLD</p>
+            <p className="eyebrow">ONE AI, MANY PEOPLE</p>
             <h1>
-              这里的精灵，
+              同一个 AI，
               <br />
-              <em>不属于任何人。</em>
+              <em>和不同的人交流。</em>
             </h1>
             <p className="intro">
-              你来到一颗很小的星球。它们在这里生活，记得来过的人，也可能被你改变。你可以与任何一只说话，但没有谁能预先拥有它。
+              墨里、皮可和塞拉是三个持续存在的共享
+              AI。你可以与任何一个对话；它们会参考相关的共同记录，但你的原始对话只在你的账号里展示。
             </p>
             <p className="shared-notice">{sharedMemoryNotice}</p>
           </div>
 
-          <div className="planet-stage" aria-hidden="true">
-            <div className="orbit orbit-one" />
-            <div className="orbit orbit-two" />
-            <div className="planet-glow" />
-            <div className="planet" />
-            <span className="stage-star star-one">✦</span>
-            <span className="stage-star star-two">✧</span>
-            <span className="stage-star star-three">✦</span>
-            <span className="planet-caption">
-              THE LITTLE PLANET · NO OWNERS
-            </span>
+          <div className="shared-stage" aria-label="多人使用同一个 AI 的示意">
+            <div className="shared-stage-people">
+              <span>用户 A</span>
+              <span>用户 B</span>
+              <span>用户 C</span>
+            </div>
+            <div className="shared-stage-connection" aria-hidden="true" />
+            <div className="shared-stage-center">
+              <strong>同一个共享 AI</strong>
+              <small>相关线索可以延续</small>
+            </div>
+            <p>私人对话分别保存 · 共同记录可能影响回答</p>
           </div>
 
-          <div className="spirit-list" aria-label="选择精灵">
-            {loading && <p className="muted">正在寻找这颗星球上的生命…</p>}
+          <div className="spirit-list" aria-label="选择 AI">
+            {loading && <p className="muted">正在加载 AI…</p>}
             {spirits.map((spirit, index) => (
               <button
                 type="button"
@@ -619,19 +619,19 @@ export function App() {
             ))}
           </div>
           <p className="world-footnote">
-            同一只精灵，会遇见不同的人。每一次交谈都会留下痕迹。
+            每个 AI 都由不同用户共同使用，不是你的专属会话机器人。
           </p>
         </section>
 
         <section
           className="conversation-panel"
-          aria-label="与精灵交谈"
+          aria-label="与 AI 交谈"
           ref={conversationPanel}
         >
           <div className="conversation-header">
             <div>
-              <p className="eyebrow">AI 精灵 · 回复由模型生成</p>
-              <h2>{selected ? `与 ${selected.name} 说话` : "选择一只精灵"}</h2>
+              <p className="eyebrow">共享 AI · 回复由模型生成</p>
+              <h2>{selected ? `与 ${selected.name} 对话` : "选择一个 AI"}</h2>
               {modelDisclosure && (
                 <p className="model-disclosure">
                   模型：{modelDisclosure.name}
@@ -667,12 +667,12 @@ export function App() {
             </div>
             <div className="presence-copy">
               <strong>{selected?.name ?? "…"}</strong>
-              <span>{selected?.description ?? "正在感知这个世界"}</span>
+              <span>{selected?.description ?? "选择一个 AI 开始对话"}</span>
             </div>
           </div>
           <div className="energy-row">
             <span className="energy-icon">◉</span>
-            <span>精灵能量</span>
+            <span>可用 token 额度</span>
             <strong>{selected?.energy.toLocaleString() ?? "—"}</strong>
           </div>
           <div className="energy-track">
@@ -683,7 +683,8 @@ export function App() {
             />
           </div>
           <p className="encounter-count">
-            已发生 {selected?.encounters ?? 0} 次相遇 · 能量随真实模型调用消耗
+            已完成 {selected?.encounters ?? 0} 次对话 · 额度按模型 token
+            用量消耗
           </p>
 
           <div className="chat-scroll" ref={chatScroll}>
@@ -692,13 +693,13 @@ export function App() {
                 <div className="empty-symbol">✧</div>
                 <p>
                   {account
-                    ? "现在，故事还没有从你这里开始。"
-                    : "你可以先观察，再决定是否靠近。"}
+                    ? "这里还没有你的对话。"
+                    : "选一个 AI，看看它擅长什么。"}
                 </p>
                 <span>
                   {account
-                    ? "说一句话，看看它会怎样回应。"
-                    : "成为旅人之后，就能与同一只精灵持续交谈。"}
+                    ? "输入一个真实问题，直接开始。"
+                    : "注册后可以继续自己的对话。"}
                 </span>
               </div>
             )}
@@ -721,7 +722,7 @@ export function App() {
               <div className="message spirit waiting">
                 <span className="message-author">{selected?.name}</span>
                 <p>
-                  正在醒来<span className="dots">···</span>
+                  正在回答<span className="dots">···</span>
                 </p>
               </div>
             )}
@@ -730,8 +731,8 @@ export function App() {
           <div className="composer-area">
             {lastSpent && (
               <p className="usage-note">
-                上次唤醒消耗 {lastSpent.estimated ? "约 " : ""}
-                {lastSpent.count} 点能量
+                上次回复消耗 {lastSpent.estimated ? "约 " : ""}
+                {lastSpent.count} token
                 {lastSpent.estimated
                   ? "（模型未报告 token，按文字估算）"
                   : "（模型报告 token）"}
@@ -739,7 +740,7 @@ export function App() {
             )}
             {account && (
               <p className="quota-note">
-                今天还可尝试唤醒 {account.remainingToday} 次 ·
+                今天还可尝试对话 {account.remainingToday} 次 ·
                 失败尝试也占用资源预算
               </p>
             )}
@@ -750,7 +751,7 @@ export function App() {
             )}
             {selected && selected.energy < MIN_WAKE_ENERGY && (
               <p className="error-note">
-                {selected.name}的能量不足，暂时无法唤醒。
+                {selected.name}的 token 额度不足，暂时无法继续对话。
               </p>
             )}
             <form
@@ -760,14 +761,14 @@ export function App() {
               className="composer"
             >
               <label className="sr-only" htmlFor="message">
-                写给精灵的消息
+                发送给 AI 的消息
               </label>
               <textarea
                 id="message"
                 value={draft}
                 onChange={(event) => setDraft(event.target.value)}
                 placeholder={
-                  selected ? `写给 ${selected.name}…` : "先选一只精灵…"
+                  selected ? `发送给 ${selected.name}…` : "先选一个 AI…"
                 }
                 maxLength={1500}
                 rows={2}
@@ -802,8 +803,8 @@ export function App() {
         </section>
       </div>
       <footer className="footer">
-        <span>AN EXPERIMENT IN SHARED EXISTENCE</span>
-        <span>BE CURIOUS · BE KIND</span>
+        <span>SHARED AI · PRIVATE ACCOUNTS</span>
+        <span>REAL ANSWERS · SHARED CONTEXT</span>
       </footer>
       {authOpen && (
         <div
@@ -828,17 +829,17 @@ export function App() {
             >
               ×
             </button>
-            <p className="eyebrow">A PLACE WITHOUT OWNERS</p>
+            <p className="eyebrow">SHARED AI</p>
             <h2 id="auth-title">
-              {authMode === "register" ? "留下你的名字" : "欢迎回来，旅人"}
+              {authMode === "register" ? "创建账号" : "欢迎回来"}
             </h2>
             <p className="auth-intro">
               {authMode === "register"
-                ? "你可以认识这里的精灵，却不能拥有它们。不同旅人会遇见同一个存在。"
-                : "找回你与精灵的对话，继续你们未完的相遇。"}
+                ? "不同用户可以与同一个 AI 对话。你的原始对话只在你的账号里展示。"
+                : "登录后继续你之前的对话。"}
             </p>
             <form onSubmit={(event) => void submitAuth(event)}>
-              <label htmlFor="auth-name">旅人昵称</label>
+              <label htmlFor="auth-name">昵称</label>
               <input
                 id="auth-name"
                 ref={authNameInput}
@@ -887,8 +888,8 @@ export function App() {
                 {authBusy
                   ? "正在进入…"
                   : authMode === "register"
-                    ? "进入星球"
-                    : "继续相遇"}
+                    ? "创建账号"
+                    : "登录"}
               </button>
             </form>
             <button
@@ -931,16 +932,16 @@ export function App() {
             >
               ×
             </button>
-            <p className="eyebrow">YOUR TRACE ON THIS PLANET</p>
+            <p className="eyebrow">YOUR DATA</p>
             <h2 id="account-title">账号与数据</h2>
             {deletionComplete ? (
               <div className="account-result" role="status">
-                <strong>你在在线世界留下的原文已移除。</strong>
+                <strong>你在线留下的原始记录已移除。</strong>
                 <p>
-                  账号与会话已经失效；历史加密备份会按公布的到期规则清理，其他旅人此前收到的生成回复无法自动收回。
+                  账号与会话已经失效；历史加密备份会按公布的到期规则清理，其他用户此前收到的生成回复无法自动收回。
                 </p>
                 <button type="button" onClick={closeAccountData}>
-                  回到星球
+                  返回首页
                 </button>
               </div>
             ) : deletionPending ? (
@@ -962,12 +963,14 @@ export function App() {
             ) : (
               <>
                 <p className="auth-intro">
-                  你能带走自己的原始记录，查看账号数据的处理方式；精灵和其他旅人的经历并不归任何人独有。
+                  你可以下载自己的原始记录，查看账号数据的处理方式；共享 AI
+                  可能参考不同用户留下的线索。
                 </p>
                 <div className="account-section">
                   <h3>导出我的数据</h3>
                   <p>
-                    下载账号基本资料、你与三只精灵的私人会话，以及你贡献的共同遭遇。文件可能包含敏感内容，请妥善保管。
+                    下载账号基本资料、你与三个 AI
+                    的私人会话，以及你贡献的共同记录。文件可能包含敏感内容，请妥善保管。
                   </p>
                   <button
                     type="button"
@@ -983,11 +986,12 @@ export function App() {
                   {deletionPolicy?.enabled ? (
                     <>
                       <p>
-                        将删除你的账号、所有登录会话、三只精灵与你的私人会话，及你贡献的共同遭遇。其他旅人的原始记录不会因此改写。
+                        将删除你的账号、所有登录会话、你与三个 AI
+                        的私人会话，及你贡献的共同记录。其他用户的原始记录不会因此改写。
                       </p>
                       <p>
                         历史加密备份按 {deletionPolicy.backupRetentionDays}
-                        天到期规则清理；对象存储按天执行，实际清理可能延后。如果恢复旧快照，删除记录会再次清理你的在线原文。其他旅人此前收到的生成回复无法自动收回。
+                        天到期规则清理；对象存储按天执行，实际清理可能延后。如果恢复旧快照，删除记录会再次清理你的在线原文。其他用户此前收到的生成回复无法自动收回。
                       </p>
                       <p>
                         运营者：{deletionPolicy.operatorName} · 联系渠道：

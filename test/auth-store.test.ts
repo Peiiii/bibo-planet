@@ -638,7 +638,7 @@ test("world attempt reservations stop at 240 across accounts", async () => {
       restarted.withMessagePermit(extra.account.id, async () => {
         calls += 1;
       }),
-      /星球今天需要休息/,
+      /今天的全站对话额度已用完/,
     );
     assert.equal(calls, 240);
   } finally {

@@ -121,7 +121,7 @@ export function createWorldServer(
       );
       const spirit = match && findSpirit(match[1]);
       if (spirit && match?.[2] === "conversation" && request.method === "GET") {
-        if (!account) throw new AuthError(401, "请先登录，再继续与精灵交谈");
+        if (!account) throw new AuthError(401, "请先登录，再继续与 AI 对话");
         sendJson(response, 200, {
           messages: store.conversation(spirit.id, account.id),
         });
@@ -129,7 +129,7 @@ export function createWorldServer(
       }
       if (spirit && match?.[2] === "messages" && request.method === "POST") {
         assertMutation(request);
-        if (!account) throw new AuthError(401, "请先登录，再继续与精灵交谈");
+        if (!account) throw new AuthError(401, "请先登录，再继续与 AI 对话");
         const body = await readJsonBody(request);
         const message =
           typeof body.message === "string" ? body.message.trim() : "";
@@ -193,12 +193,12 @@ export function createWorldServer(
         error instanceof Error ? `${error.name}: ${error.message}` : "unknown",
       );
       const publicError = /\(429\)/.test(message)
-        ? "模型服务额度已用完，精灵暂时无法回应。"
+        ? "模型服务额度已用完，AI 暂时无法回答。"
         : /\(402\)/.test(message)
-          ? "模型账户余额不足，精灵暂时无法回应。"
+          ? "模型账户余额不足，AI 暂时无法回答。"
           : /\(401\)/.test(message)
-            ? "模型凭据无效，精灵暂时无法回应。"
-            : "精灵暂时无法回应，请稍后再试。";
+            ? "模型凭据无效，AI 暂时无法回答。"
+            : "AI 暂时无法回答，请稍后再试。";
       sendJson(response, status, {
         error: status === 502 ? publicError : message,
       });

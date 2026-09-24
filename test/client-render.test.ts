@@ -10,11 +10,12 @@ import {
   renderSpiritText,
 } from "../src/client/app.tsx";
 
-test("conversation identifies the spirit as AI before a visitor sends a message", () => {
+test("conversation identifies shared AI and discloses cross-user context", () => {
   const html = renderToStaticMarkup(createElement(App));
-  assert.match(html, /AI 精灵 · 回复由模型生成/);
-  assert.match(html, /发送成功的内容会成为精灵的共同记忆/);
-  assert.match(html, /其他旅人可能从它的回应中得知/);
+  assert.match(html, /共享 AI · 回复由模型生成/);
+  assert.match(html, /你发送的内容可能进入共享上下文/);
+  assert.match(html, /影响 AI 对其他用户的回答/);
+  assert.doesNotMatch(html, /精灵星球|正在醒来|能量/);
 });
 
 test("spirit emphasis renders without exposing raw markup or HTML", () => {
@@ -28,9 +29,9 @@ test("spirit emphasis renders without exposing raw markup or HTML", () => {
 
 test("mobile activity labels preserve recency without overflowing cards", () => {
   const recent = new Date(Date.now() - 5 * 60_000).toISOString();
-  assert.equal(activityLabel(recent), "5 分钟前有人来过");
+  assert.equal(activityLabel(recent), "5 分钟前有人对话");
   assert.equal(activityLabel(recent, true), "5分钟前");
-  assert.equal(activityLabel(null, true), "等待相遇");
+  assert.equal(activityLabel(null, true), "暂无对话");
 });
 
 test("a completed turn is visible immediately and a replay cannot duplicate it", () => {

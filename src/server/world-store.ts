@@ -32,7 +32,7 @@ type SpiritState = {
 
 export class EnergyExhaustedError extends Error {
   constructor() {
-    super("这只精灵的能量暂时不足，无法醒来。");
+    super("这个 AI 的 token 额度不足，暂时无法继续对话。");
   }
 }
 

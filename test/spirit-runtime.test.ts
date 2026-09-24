@@ -59,6 +59,9 @@ test("different visitors share encounters without sharing private dialogue", asy
     assert.equal(first.usageKind, "reported");
     assert.equal(second.spent, 73);
     assert.match(String(runs[1]?.[0]?.content), /蓝色月亮/);
+    assert.match(String(runs[1]?.[0]?.content), /不要假装自己生活在虚拟世界/);
+    assert.match(String(runs[1]?.[0]?.content), /不是你要模仿的说话风格/);
+    assert.doesNotMatch(String(runs[1]?.[0]?.content), /你生活在 Bibo Planet/);
     assert.equal(runs[1]?.length, 2);
     assert.equal(store.conversation("mori", "bob").length, 2);
     assert.equal(store.conversation("mori", "alice").length, 2);
@@ -151,7 +154,7 @@ test("a later visitor can cue an older shared memory without seeing private hist
       };
     });
     await runtime.talk("sela", "bob", "你还记得蓝色风铃吗？");
-    assert.match(system, /更早共同遭遇/);
+    assert.match(system, /更早共同记录/);
     assert.match(system, /蓝色风铃/);
     assert.equal(store.conversation("sela", "bob").length, 2);
     assert.equal(store.conversation("sela", "alice").length, 2);

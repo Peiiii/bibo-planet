@@ -222,7 +222,7 @@ test("model failure returns an error without recording a turn or successful usag
     });
     assert.equal(sent.status, 502);
     assert.deepEqual(await sent.json(), {
-      error: "模型凭据无效，精灵暂时无法回应。",
+      error: "模型凭据无效，AI 暂时无法回答。",
     });
     const conversation = await fetch(`${base}/api/spirits/mori/conversation`, {
       headers: { Cookie: cookie },
