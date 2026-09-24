@@ -15,7 +15,7 @@
 
 1. 从外网确认 `https://planet.bibo.bot/`、`/api/world`、`/api/session` 返回 200。匿名访问 `/api/spirits/mori/conversation` 应为 401；直接访问 `https://nextclaw.net/__bibo/api/world` 而不带内部密钥应为 403。
 2. 在 ECS 确认 `systemctl is-active bibo-planet` 为 `active`，`nginx -t` 通过，`nextclaw.net` 原站首页仍为 200。只看 `journalctl -u bibo-planet` 的错误类型和状态；不回显请求正文或环境变量。
-3. 确认 `/var/lib/bibo-planet` 有足够磁盘空间、服务内存未接近 `MemoryMax=900M`；观察模型 401/402/429/超时、每日尝试额度与供应商余额/账单。每账号每天最多 18 次模型尝试与 12 次成功唤醒，全星球最多 240 次模型尝试；调用前预留并持久化，失败也占尝试预算。该上限只约束当前**单实例**发起调用的次数，不是金额上限；内部重试、模型价格变化和未来多实例部署需要单独监控或改造。首页 200 不能证明推理服务可用，必要时以受控测试账号发一条真实消息。
+3. 确认 `/var/lib/bibo-planet` 有足够磁盘空间、服务内存未接近 `MemoryMax=900M`；观察模型 401/402/429/超时、每日尝试额度与供应商余额/账单。每账号每天最多 18 次业务层唤醒尝试与 12 次成功唤醒，全星球最多 240 次业务层尝试；调用前预留并持久化，失败也占尝试预算。**这不是供应商实际 HTTP 请求数或账单金额的硬上限**：已安装的 NextClaw 兼容适配器在瞬时错误下每个 API base 可重试最多 3 次，根路径配置还可能试 `/v1`；未来多实例也不会共享当前单机账本。监测真实余额/账单和[官方价格](https://api-docs.deepseek.com/quick_start/pricing/)，不能只看首页 200；必要时以受控测试账号发一条真实消息。
 
 ## 备份与恢复
 

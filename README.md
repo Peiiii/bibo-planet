@@ -36,7 +36,7 @@ BIBO_NEXTCLAW_CONFIG=/absolute/path/to/.nextclaw/config.json
 
 ## 公网架构与运营边界
 
-`planet.bibo.bot` 由 Cloudflare Worker 托管静态前端，并将 `/api/*` 通过 HTTPS 代理到受保护的 Node 服务。Node 服务只监听云主机 loopback，要求随机边缘认证头；模型密钥仅在后端运行环境里。生产实例以 `BIBO_DATA_DIR` 指向独立的持久数据目录，不依赖代码目录可写。账号密码使用 scrypt 哈希，会话 cookie 为 `HttpOnly`、公网 `Secure`，账号、世界与私人对话持久化到独立数据目录。公开服务设有每账号每天最多 12 次成功唤醒、18 次模型尝试和全星球 240 次模型尝试，以及注册/登录节流；失败尝试不伪造成成功对话，但会占用尝试预算。调用次数上限不是供应商账单金额保证；它们是成本/滥用保护，不是精灵世界的所有权规则。
+`planet.bibo.bot` 由 Cloudflare Worker 托管静态前端，并将 `/api/*` 通过 HTTPS 代理到受保护的 Node 服务。Node 服务只监听云主机 loopback，要求随机边缘认证头；模型密钥仅在后端运行环境里。生产实例以 `BIBO_DATA_DIR` 指向独立的持久数据目录，不依赖代码目录可写。账号密码使用 scrypt 哈希，会话 cookie 为 `HttpOnly`、公网 `Secure`，账号、世界与私人对话持久化到独立数据目录。公开服务设有每账号每天最多 12 次成功唤醒、18 次业务层模型尝试和全星球 240 次业务层模型尝试，以及注册/登录节流；失败尝试不伪造成成功对话，但会占用尝试预算。适配器可能对一次尝试自动重试，所以该上限不是供应商 HTTP 请求数或账单金额保证；它们是成本/滥用保护，不是精灵世界的所有权规则。
 
 部署与运营必须遵守 [公网设计](docs/designs/2026-09-24-public-world.design.md)、[线上运行手册](docs/OPERATIONS.md) 和 [上线验收记录](docs/plans/2026-09-24-public-launch.plan.md)。没有完成该记录中的外网验收时，不应把仓库源码或本机页面称为可直接交付的产品。生产凭据不进入 Git、文档和日志。
 
