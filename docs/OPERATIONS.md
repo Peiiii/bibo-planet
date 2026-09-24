@@ -27,7 +27,9 @@
 
 2026-09-24 12:53 使用有权读取桶配置的本机阿里云 CLI 查询 OSS `GetBucketLifecycle`，返回 `NoSuchLifecycle`；`daily/` 实际 4 个对象、15,495 字节。当前**没有**自动到期清理，ECS 上 `deploy/backup.sh` 成功上传后也会保留本地加密档案。删除策略和灾难恢复时防止已删除旅人数据回流须先设计、验证再配置；在此之前不要对访客承诺固定保留期或“删除后所有备份消失”。本次只读查询，没有改动桶和任何备份。
 
-2026-09-24 17:20 补核对[阿里云 PutBucketLifecycle 规则](https://help.aliyun.com/en/oss/developer-reference/putbucketlifecycle)与[到期执行机制](https://help.aliyun.com/en/oss/analysis-of-the-reasons-why-the-oss-configuration-file-does-not-take-effect-after-its-lifecycle)：`Expiration.Days` 以对象最后修改时间计算，但 OSS 会按日执行，到期后可能延迟删除，规则初次加载也可有延迟；`PutBucketLifecycle` 会覆盖整个桶的现有规则。将来配置时必须先读取并保留其它规则，限定 `daily/` 前缀而绝不覆盖不随快照回滚的 `deletions/`；核对实际对象清理结果并处理异常。页面不得承诺“最多 N 天”这样的硬上限，只能准确说明到期规则与可能延迟。当前仍未配置任何生命周期或执行删除。
+2026-09-24 17:20 补核对[阿里云 PutBucketLifecycle 规则](https://help.aliyun.com/en/oss/developer-reference/putbucketlifecycle)与[到期执行机制](https://help.aliyun.com/en/oss/analysis-of-the-reasons-why-the-oss-configuration-file-does-not-take-effect-after-its-lifecycle)：`Expiration.Days` 以对象最后修改时间计算，但 OSS 会按日执行，到期后可能延迟删除，规则初次加载也可有延迟；`PutBucketLifecycle` 会覆盖整个桶的现有规则。将来配置时必须先读取并保留其它规则，限定备份专用前缀而绝不覆盖不随快照回滚的 `deletions/`；核对实际对象清理结果并处理异常。页面不得承诺“最多 N 天”这样的硬上限，只能准确说明到期规则与可能延迟。当前仍未配置任何生命周期或执行删除。
+
+2026-09-24 17:21 只读盘点发现上段只提 `daily/` 仍不完整：本地 `/var/backups/bibo-planet` 有 11 份 `daily-*.tar.gz.gpg`、早期 `pre-restart-20260924-1025.tar.gz` 与 `pre-update-20260924-1035.tar.gz` 两份**明文** root-only 归档，以及 `pre-update-20260924-1035.tar.gz.gpg` 一份密文；私有 OSS 共 14 个对象，其中 `daily/` 11 份、`2026-09-24/` 下早期密文 2 份、`deletions/` 初始化标记 1 份。配置到期规则时须覆盖 `daily/` 和旧日期前缀、并单独处理本地每日档案及早期明文/密文；不能给桶根前缀设统一删除而清掉墓碑。所有对象与本地文件目前原样保留，备份期限尚待用户确定。
 
 ### 账号删除记录的离机准备（2026-09-24 16:35，北京时间；尚未启用线上删除）
 
