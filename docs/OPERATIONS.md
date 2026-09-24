@@ -8,6 +8,7 @@
 - 静态响应头由构建进 `dist/` 的 `public/_headers` 管理，覆盖首屏与指纹化资源；API 响应由 Worker 代码生成，不受该文件覆盖。2026-09-24 已在公网确认 HTML 与 JS 均带防嵌入、`nosniff`、Referrer/Permissions Policy、有限 CSP 与 HSTS；改动该文件时须同时检查真实页面可加载和 API 会话链路。Cloudflare 官方合同：<https://developers.cloudflare.com/workers/static-assets/headers/>。
 - 阿里云杭州 ECS `i-bp11euxyc7o1ned0k8yd` 上的 Bibo 服务独立运行：源码 `/opt/bibo-planet`，Node `/opt/bibo-node/bin/node`，systemd 单元 `bibo-planet`，只监听 `127.0.0.1:3039`，运行身份 `bibo-planet`。Nginx 的 `nextclaw-net.conf` 包含独立片段 `/etc/nginx/bibo-location.conf`，旧站主页不应受影响。
 - 用户数据在 `/var/lib/bibo-planet`，其中 `accounts.json` 含密码哈希和会话哈希，`spirits/*/state.json` 含所有旅人的原始对话及共同遭遇，均属敏感数据。服务端凭据在 root-only `/etc/bibo-planet/env`。不要把数据、环境文件、Cloud Assistant 输出或备份上传到仓库。
+- 生产 unit 设置 `NODE_ENV=production`。自 `bef2fd8` 起，启动时若账号或任意一只精灵的状态文件缺失，进程会拒绝监听，不能靠自动新建空数据来“恢复”；先核对数据路径与挂载，按下方备份流程恢复，不能删除其余文件后重启。首次本地开发世界仍可显式初始化，生产不以此方式引导新世界。
 - 生产模型为 DeepSeek 正式 API，通过 NextClaw Harness 的无宿主工具模型能力调用。当前公开版不具备自写代码、文件/命令/网络工具或 mini-app 沙箱；不能在产品文案中宣称这些已交付。
 
 ## 日常健康检查
@@ -43,7 +44,9 @@
 
 历史发布锚点（2026-09-24 14:02，北京时间）：ECS 后端应用与 Cloudflare 前端/Worker 源均为 Git `9046ef1`，Worker 版本 `85bc613c-115c-45e8-aa30-c2ef000c21d6`。本次发布前仅对 Bibo 启动专用备份服务并确认 success；新的加密档案 `daily-2026-09-24-132521.3Byfnthr.tar.gz.gpg` 已在私有 OSS 列表中确认存在。随后从 OSS 下载该精确对象，SHA-256 `ef6ce100821ab738951e75f899b5f4786034950026164f5b67085166a668fd55` 与 ECS 文件一致，本机私钥流式解密可完整读取 8 个归档条目；临时加密副本已清理、没有落盘明文。这不等于生产原位恢复演练，也不等于自然 timer 已触发。发布时只重启 Bibo 服务，Bibo 与备份 timer active、服务器工作区干净，原 `nextclaw.net` 主页 200。公网已有 `robots.txt`/`llms.txt`、受限 CSP、AI 来源标记、「导出我的数据」及对话标题旁的模型名称、备案号与官方来源。新档案由账号 Cookie 确定身份，包含本人账号基本资料、三只精灵的本人会话及本人贡献的共同遭遇；两个隔离 Chrome 旅人实际下载后核对各自原始记录分离、无密码或会话哈希，匿名接口 401，320px 页宽无溢出。该下载会包含私人内容，旅人应妥善保存。此前注册、真实模型连续对话、跨访客共享记忆、手机发送/恢复、键盘弹窗等验收证据详见[公网交付与验收记录](plans/2026-09-24-public-launch.plan.md)。首个自然定时备份、账号删除/完整隐私告知/权利路径、备案与境内公众 AI 服务要求仍未闭合，不能仅凭本节称为正式获客成品。 本次后端/Worker 更新前使用同一备份服务生成加密对象 `daily-2026-09-24-135753.xy6UmX2X.tar.gz.gpg`，服务返回 success，OSS 列表确认对象存在；随后已从私有 OSS 取回这一精确对象并完成隔离恢复验证，详见上方记录。生产配置只读核对为 `deepseek/deepseek-chat`，公网 `/api/world` 返回 `Deepseek Chat / Beijing-DeepseekChat-202404280016` 和 DeepSeek 官方来源。匿名 1440×900 与登录 320×700 Chrome 页面均显示该公示，桌面主操作仍完整、手机没有横向溢出；公网首页与世界 API、原站均 200，无边缘密钥源站路径 403。模型备案不等于本应用备案。
 
-当前发布锚点（2026-09-24 14:32，北京时间）：ECS 后端 Git `b095bc9`，Cloudflare Worker `ae16925e-777c-4b66-b126-898179acb279`，静态 JS `index-WtFKkIZ1.js`。发布前仅对 Bibo 执行专用备份服务，systemd 返回 success；私有 OSS 已列出本次加密对象 `daily-2026-09-24-142648.RoNUEwOr.tar.gz.gpg`。此次对象仅确认上传存在，尚未取回解密；上方 `13:57` 对象已完成隔离恢复验证。远端升级过程中，pnpm 子进程因未找到 `node` 导致第一次远端 TypeScript 检查停止，**当时没有重启服务**；随后用 `/opt/bibo-node/bin/node` 直接运行 TypeScript 编译器通过，才重启 Bibo。Bibo 与备份 timer 均 active，公网首页、世界 API 与原 `nextclaw.net` 首页均 200；无密钥的源站 Bibo 路径仍为 403。隔离本地浏览器验过新版即时显示回复及刷新持久性；公网 API 用新旅人实测 DeepSeek 连续两轮、同编号重放不重复计数/扣额、私人历史 4 条。公网浏览器自动控制本次超时，不能把本地 UI 加公网 API 说成已完成公网浏览器复验。首个自然定时备份、数据权利/备案和境内 AI 服务要求仍未闭合，不能称为正式获客成品。
+历史发布锚点（2026-09-24 14:32，北京时间）：ECS 后端 Git `b095bc9`，Cloudflare Worker `ae16925e-777c-4b66-b126-898179acb279`，静态 JS `index-WtFKkIZ1.js`。发布前仅对 Bibo 执行专用备份服务，systemd 返回 success；私有 OSS 已列出本次加密对象 `daily-2026-09-24-142648.RoNUEwOr.tar.gz.gpg`。此次对象仅确认上传存在，尚未取回解密；上方 `13:57` 对象已完成隔离恢复验证。远端升级过程中，pnpm 子进程因未找到 `node` 导致第一次远端 TypeScript 检查停止，**当时没有重启服务**；随后用 `/opt/bibo-node/bin/node` 直接运行 TypeScript 编译器通过，才重启 Bibo。Bibo 与备份 timer 均 active，公网首页、世界 API 与原 `nextclaw.net` 首页均 200；无密钥的源站 Bibo 路径仍为 403。隔离本地浏览器验过新版即时显示回复及刷新持久性；公网 API 用新旅人实测 DeepSeek 连续两轮、同编号重放不重复计数/扣额、私人历史 4 条。公网浏览器自动控制本次超时，不能把本地 UI 加公网 API 说成已完成公网浏览器复验。首个自然定时备份、数据权利/备案和境内 AI 服务要求仍未闭合，不能称为正式获客成品。
+
+当前发布锚点（2026-09-24 14:40，北京时间）：ECS 后端 Git `bef2fd8`；前端/Worker 沿用 Git `b095bc9` 与 Worker 版本 `ae16925e-777c-4b66-b126-898179acb279`，本次未改动或重部署前端。更新前核对四份生产状态文件非空、systemd `NODE_ENV=production`、Bibo/备份 timer active 且代码区干净；仅对 Bibo 执行备份服务并确认 success，私有 OSS 列表中确认加密对象 `daily-2026-09-24-143853.gKch4XDF.tar.gz.gpg`。该新对象只证实上传存在，尚未取回解密；较早 `13:57` 对象的隔离恢复证据见上文。远端 TypeScript 检查通过后只重启 Bibo；公网三只精灵的能量/相遇数未回退，首页/世界 API 与原站均 200，无密钥的源站 Bibo 路径为 403。公网新旅人实际完成注册、会话读取与塞拉真实模型一轮对话，本人历史 2 条、塞拉相遇 `3→4`。生产缺失数据路径在隔离空目录验证为启动失败且不新建空状态，尚未在生产故意移除状态文件或执行原位恢复。首次自然定时备份及 AC-10/AC-11 仍未完成。
 
 ## 故障分层
 
@@ -52,5 +55,6 @@
 - 注册/登录失败：区分 400 输入、401 凭据、403 Origin/边缘认证、429 IP 限流与 5xx 持久化故障。不要通过关闭来源检查或边缘密钥来“修复”。
 - 对话失败：区分账号/世界额度、精灵能量、模型供应商余额/凭据/限流/超时；不返回模拟 AI 文字冒充成功。
 - 只有一个访客异常：先看浏览器会话与该账号的个人额度；不要导出其他访客原始对话辅助排查。
+- Bibo 反复启动失败且提示账号或精灵状态缺失：按数据丢失事件处理，保持服务不对外写入；核对 `/var/lib/bibo-planet` 路径、文件和最近成功的精确加密备份，先隔离验证再决定是否原位恢复。禁止改成开发模式绕过缺失检查。
 
 未完成的正式验收项和每轮证据以[公网交付与验收记录](plans/2026-09-24-public-launch.plan.md)为准。
