@@ -2,13 +2,21 @@
 
 状态：记录至 2026-09-25 的实际部署；变更后须同步复核。上线地址为 <https://planet.bibo.bot>，源码为 <https://github.com/Peiiii/bibo-planet>。本手册只存放路径、流程和检查项，不存放任何密钥值或私人对话内容。
 
-## 当前前端上线锚点（2026-09-25 01:55 北京时间）
+## 当前文件能力上线锚点（2026-09-25 01:26，北京时间）
+
+GitHub `master`、ECS Bibo 后端同为 `25c6581319b53fd22be313d1ca239c74fffb1abd`，Cloudflare Worker 版本 `85460cac-1093-4f28-9542-118f5386823d`、静态 JS `index-BdR_WfRE.js`。只更新 Bibo 自身服务与 Worker，NextClaw SDK 的 19 包固定快照未变，同机旧站未重启。前端明确说明 AI 有自己的共享文本文件，并提示内容可能被其他用户间接获知。真实 NextClaw Agent 的工具闭集从两项笔记工具扩展为 `bibo_file_list`、`bibo_file_read`、`bibo_file_write` 共五项；只能列/读自己的工作区，写入自己的 `files/`，不可运行代码、访问网络、宿主文件或其他 AI 目录。`AGENTS.md`/`IDENTITY.md` 只读，`MEMORY.md` 仍用原笔记工具。`restrictToWorkspace` 仍不被视为 OS 沙箱。
+
+发布前 46/46 测试、TypeScript、ESLint、Prettier、Vite 构建、Wrangler dry-run 与差异检查通过；隔离真实 Agent 写入→读回→下一轮列目录成功。ECS 原代码区干净、四份状态文件存在，先运行 Bibo 专用加密备份；更新后按原锁文件离线安装、远端 TypeScript 通过，只重启 Bibo。公网两个隔离 Chrome 账号从注册/登录页面访问同一墨里：甲实际列目录并写/读文件，刷新后历史保留；乙读到同一内容；乙切换皮可读不到该文件，390px 手机无横向溢出。第一次浏览器脚本在切换 AI 后误沿用上一会话消息计数而超时，服务器四轮模型调用及目标文件已完成；复用同一测试账号只读重检四段页面回复后，黄金文件链路通过，没有为纠正脚本另建账号或重复模型调用。
+
+新文件产生后再次运行同一个 Bibo 加密备份 service，Bibo 重启后仍有文件，乙账号重新登录后历史仍在。精确 OSS 对象 `daily/daily-2026-09-25-012450.sE62Y5d8.tar.gz.gpg` 为 33,139 字节、AES256；离机流式读取前 33,139 字节的 SHA-256 `b154bd5629866ddf983352e780fcd25d796e37b1286337c7470518ec6166559e` 与 ECS 原件相同，私钥流式解密后的归档列出账号、三只 AI 状态与新共享文件；没有落盘明文。Bibo 与 backup timer active、`NRestarts=0`，公网首页/世界 API/同机旧站 200，无密钥源站 403。该验证不是生产原位覆盖恢复；定时器 `LastTriggerUSec` 仍空，首次自然备份预计 2026-09-25 04:16:53 CST。公开删除入口、备份保留期与最终整站交付门仍未完成，不能由本次文件上线宣称产品整体已可正式获客。
+
+## 历史前端上线锚点（原记录标注 2026-09-25 01:55 北京时间）
 
 GitHub `master` 的前端修复来源为 `12a6267`；Cloudflare Worker 版本 `df31f70d-3ac2-4213-9d9f-d25337156a7f`，静态资产 `index-CElEQR1f.js` / `index-BUw-pkRK.css`。此批只更新 Cloudflare Worker 与静态资源，ECS Bibo 后端继续运行下方 `c0d7b1d`，没有重启 Bibo、备份 timer 或同机旧站；Worker 原有边缘 secret 保留。发布前 44/44 测试、TypeScript、定向 ESLint、Prettier、Vite 构建与 Wrangler dry-run 通过，部署前回退版本记录为 `0a3e79e2-63db-4251-a148-ade7683c60bc`。
 
 新访客若 `/api/world` 一直悬挂，首屏 AI 列表约 20 秒后停止无限加载，在卡片位置显示「重试」；写操作、模型生成和额度均未改。公网全新 Chrome 的 390×844 移动视口人为悬挂这条只读请求，约 21.6 秒后看到 `role=alert` 与可操作的重试，无卡片时 `innerWidth=scrollWidth=390`；放开请求再点重试，约 1 秒出现三张卡片且错误消失。正常公网首页、世界/会话 API 和同机旧站均为 200，无边缘密钥直访源站仍为 403。此故障演练不是真实边缘或源站故障，也不替代登录后 Agent、对抗输入、自然备份和正式运营验收。
 
-## 当前上线锚点（2026-09-25 00:07 北京时间）
+## 历史 Agent 首次切换锚点（2026-09-25 00:07 北京时间）
 
 Bibo ECS 运行代码为 `c0d7b1d9cdd48e21bef3b03a154181f11c9ae32d`；GitHub `master` 后续还有不改变运行代码的验收文档提交，前端/Cloudflare Worker 未改。NextClaw Agent SDK 固定快照来自独立源码分支提交 `651fe5b259178abb47d8c394b7b3840978c21e71`，不是 `pnpm link`，也未发布 NextClaw 全量 NPM 批次。服务器快进前工作区干净，更新后按锁文件安装、实际导入 Harness 和 TypeScript 检查均通过；三只 Agent 以服务身份在隔离目录启动/清理成功。只更新并重启 Bibo 的 systemd 单元，`RuntimeDirectory=/run/bibo-planet-agent` 实际为 `bibo-planet:bibo-planet 0700`；Bibo、备份 timer active，`NRestarts=0`，同机 `nextclaw.net` 首页 200。
 
@@ -23,11 +31,11 @@ Bibo ECS 运行代码为 `c0d7b1d9cdd48e21bef3b03a154181f11c9ae32d`；GitHub `ma
 - 阿里云杭州 ECS `i-bp11euxyc7o1ned0k8yd` 上的 Bibo 服务独立运行：源码 `/opt/bibo-planet`，Node `/opt/bibo-node/bin/node`，systemd 单元 `bibo-planet`，只监听 `127.0.0.1:3039`，运行身份 `bibo-planet`。Nginx 的 `nextclaw-net.conf` 包含独立片段 `/etc/nginx/bibo-location.conf`，旧站主页不应受影响。
 - 用户数据在 `/var/lib/bibo-planet`，其中 `accounts.json` 含密码哈希和会话哈希，`spirits/*/state.json` 含所有旅人的原始对话及共同遭遇，均属敏感数据。服务端凭据在 root-only `/etc/bibo-planet/env`。不要把数据、环境文件、Cloud Assistant 输出或备份上传到仓库。
 - 生产 unit 设置 `NODE_ENV=production`。自 `bef2fd8` 起，启动时若账号或任意一只精灵的状态文件缺失，进程会拒绝监听，不能靠自动新建空数据来“恢复”；先核对数据路径与挂载，按下方备份流程恢复，不能删除其余文件后重启。首次本地开发世界仍可显式初始化，生产不以此方式引导新世界。
-- 生产模型当前配置为 DeepSeek 正式 API 的 `deepseek/deepseek-flash`，经受限 NextClaw Agent 运行。Flash 的特定备案号尚未核实，不能沿用旧 Chat 模型号。当前公开版不具备自写代码、任意文件/命令/网络工具或 mini-app 沙箱；不能在产品文案中宣称这些已交付。
+- 生产模型当前配置为 DeepSeek 正式 API 的 `deepseek/deepseek-flash`，经受限 NextClaw Agent 运行。Flash 的特定备案号尚未核实，不能沿用旧 Chat 模型号。当前公开版已具备 AI 自有空间的有限文本文件工具，但不具备代码执行、任意宿主文件/命令/网络工具或 mini-app 沙箱；不能在产品文案中宣称这些已交付。
 
 ### NextClaw Agent 运行合同（2026-09-25，生产已切换）
 
-当前版本让三只共享 AI 分别使用稳定 NextClaw Agent ID、独立工作空间和真正的 `runTask`。公网访客只允许调用该 AI 的 `bibo_memory_read` / `bibo_memory_replace` 两个固定无路径工具；不得开放 NextClaw 默认的文件、命令、网络工具，斜杠命令亦关闭。长期文件位于 `BIBO_DATA_DIR/workspace/agents/<id>/`，共享笔记可能受访客影响；其他人的原始对话仍由世界状态单独管理，不因 Agent 工作空间存在就允许直接查询。
+当前版本让三只共享 AI 分别使用稳定 NextClaw Agent ID、独立工作空间和真正的 `runTask`。公网访客只允许调用该 AI 的 `bibo_memory_read` / `bibo_memory_replace`、`bibo_file_list` / `bibo_file_read` / `bibo_file_write` 五项受控工具；后两项的路径严格限于本 AI，写入只允许 `files/` 内的有界 UTF-8 文本。不得开放 NextClaw 默认的宿主文件、命令、网络工具，斜杠命令亦关闭。长期文件位于 `BIBO_DATA_DIR/workspace/agents/<id>/`；共享文件和笔记可能受访客影响，其他人的原始对话仍由世界状态单独管理，不因 Agent 工作空间存在就允许直接查询。账号删除后新共享内容能在普通重启中保留；若离机墓碑变动或旧账号快照恢复，`workspace/agents/.deletion-scrub.json` 指纹及恢复账号复核会触发保守清理。备份脚本归档整个 `workspace/agents`，包含此标记和共享文件；绝不可只恢复文件而绕过账号/世界状态与离机墓碑重放。
 
 每轮 Harness/session 的临时目录位于 `BIBO_AGENT_RUNTIME_DIR=/run/bibo-planet-agent` 下；systemd 以 0700 创建目录，正常完成后销毁整轮 home。单删 session 不足以清除 SQLite WAL 中的原文。后续更新前仍须核对真实 SDK 依赖而非 `pnpm link`，执行 Bibo 专用加密备份并验证上传；以 `bibo-planet` 身份检查 unit 写权限、内存限制与凭据引用，复测连续两轮及跨账号链路、报告 token、模型调用次数、无宿主工具调用和临时目录残留。新备份已经包含 `workspace/agents` 并完成离机取回、解密列项；隔离恢复及自然 timer 首次触发仍须单独验收。任何一项失败，保留或回滚应用代码并保护数据，不把仅有 `runTask` 的空工具运行宣布为最终 Agent 能力。
 
