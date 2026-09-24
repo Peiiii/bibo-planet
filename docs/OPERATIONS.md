@@ -1,12 +1,14 @@
 # Bibo Planet 线上运行手册
 
-状态：2026-09-24 记录的实际部署；变更后须同步复核。上线地址为 <https://planet.bibo.bot>，源码为 <https://github.com/Peiiii/bibo-planet>。本手册只存放路径、流程和检查项，不存放任何密钥值或私人对话内容。
+状态：记录至 2026-09-25 的实际部署；变更后须同步复核。上线地址为 <https://planet.bibo.bot>，源码为 <https://github.com/Peiiii/bibo-planet>。本手册只存放路径、流程和检查项，不存放任何密钥值或私人对话内容。
 
 ## 当前上线锚点（2026-09-25 00:07 北京时间）
 
-Bibo ECS 后端与仓库 `master` 为 `c0d7b1d9cdd48e21bef3b03a154181f11c9ae32d`；前端/Cloudflare Worker 未改，仍沿用上一版。NextClaw Agent SDK 固定快照来自独立源码分支提交 `651fe5b259178abb47d8c394b7b3840978c21e71`，不是 `pnpm link`，也未发布 NextClaw 全量 NPM 批次。服务器快进前工作区干净，更新后按锁文件安装、实际导入 Harness 和 TypeScript 检查均通过；三只 Agent 以服务身份在隔离目录启动/清理成功。只更新并重启 Bibo 的 systemd 单元，`RuntimeDirectory=/run/bibo-planet-agent` 实际为 `bibo-planet:bibo-planet 0700`；Bibo、备份 timer active，`NRestarts=0`，同机 `nextclaw.net` 首页 200。
+Bibo ECS 运行代码为 `c0d7b1d9cdd48e21bef3b03a154181f11c9ae32d`；GitHub `master` 后续还有不改变运行代码的验收文档提交，前端/Cloudflare Worker 未改。NextClaw Agent SDK 固定快照来自独立源码分支提交 `651fe5b259178abb47d8c394b7b3840978c21e71`，不是 `pnpm link`，也未发布 NextClaw 全量 NPM 批次。服务器快进前工作区干净，更新后按锁文件安装、实际导入 Harness 和 TypeScript 检查均通过；三只 Agent 以服务身份在隔离目录启动/清理成功。只更新并重启 Bibo 的 systemd 单元，`RuntimeDirectory=/run/bibo-planet-agent` 实际为 `bibo-planet:bibo-planet 0700`；Bibo、备份 timer active，`NRestarts=0`，同机 `nextclaw.net` 首页 200。
 
 公网真实 Flash Agent：两个新账号向墨里共发三轮，服务日志显示每轮模型调用 1 次；生产状态只读检查表明甲的第二轮回复含甲昵称和前轮“吉他”，乙回复含乙昵称而未错认甲，私人历史分别 4/2 条。Bibo 专用备份服务随后以新脚本正常停写、加密、上传并重启 Bibo；备份 `daily/daily-2026-09-25-000459.V1BO8zv3.tar.gz.gpg` 在私有 OSS 为 21,904 字节、AES256。本机精确取回并流式解密，归档完整列出账号、三只 AI 状态和三只 AI 各自的 `AGENTS.md`、`IDENTITY.md`、`MEMORY.md`；这证明新范围进入可解密归档，不是生产原位覆盖恢复演练。重启后新的公网账号与皮可真实对话成功，识别当前昵称、会话 2 条、报告 1,178 tokens。正常轮次 `/run/bibo-planet-agent` 只留 3 份无对话的配置文件，没有 SQLite/session 文件；备份触发的服务重启后临时目录归零。公网世界 API 与原站均为 200。浏览器自动控制两次超时，**本次切流尚无新版页面真实点击与手机视觉复验**，不能以 API 链路代替；首次自然备份、公开账号删除和 AC-10/11 也仍未完成。用户可以从线上地址亲自体验已切换的 Agent 回答，但不得宣传为完成正式获客验收。
+
+本次发布验证的效率约 4/10：19 包快照构建/校验和云助手逐步下发/取回都依赖人工串联；最初的公网验收脚本把 `reply`（消息对象）的合同误当成字符串，三轮请求成功却在末尾断言报错，后经只读状态检查补证；随后单轮脚本改用 `reply.text` 并通过。浏览器入口两次各约 30 秒超时，继续重试没有高价值。下一次先在隔离环境固定完整响应合同、Agent 工具/重启/备份测试，再做一次批量远端预检与少量公网抽样。不要把当前临时脚本直接做成反复创建生产账号的自动任务：公开删除仍关闭，测试账号会留在生产状态并消耗共享供应商余额。长期应把 19 包临时快照换成正式版本化 SDK；目前只是改进方向，不是假装已有发布流水线。
 
 ## 运行边界
 
