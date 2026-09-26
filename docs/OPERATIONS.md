@@ -1,12 +1,18 @@
 # Bibo Planet 线上运行手册
 
-状态：记录至 2026-09-26 的实际部署；变更后须同步复核。上线地址为 <https://planet.bibo.bot>，源码为 <https://github.com/Peiiii/bibo-planet>。本手册只存放路径、流程和检查项，不存放任何密钥值或私人对话内容。
+状态：记录至 2026-09-27 的实际部署；变更后须同步复核。上线地址为 <https://planet.bibo.bot>，源码为 <https://github.com/Peiiii/bibo-planet>。本手册只存放路径、流程和检查项，不存放任何密钥值或私人对话内容。
 
-## 当前前端发布锚点（2026-09-26 13:11，北京时间）
+## 当前前端发布锚点（2026-09-27 01:09，北京时间）
+
+前端/Worker 源码 `6c8d6698a5b9e0df801f6bb1a5798cffc372737f` 已推送 GitHub，Worker `650846f4-0d12-4a01-902f-173059f625d4`、CSS `index-B57wl6Gj.css` / JS `index-bwA35Iw-.js`。只将账号资料既有的限高/滚动移到基础弹窗，注册、登录同样能在短视口滚动；没有修改账号、请求或 Agent 逻辑。ECS 后端仍运行 `25c6581`，本次未重启 Bibo、timer 或同机原站。回退锚点为 `9f88bf7a-1c89-4c5d-bb75-a058c26bca86`，回退会撤掉短视口修复，保留上一轮输入法修复。
+
+48/48 测试、tsc、定向 lint/格式、构建、Wrangler dry-run、差异检查和人工 Review 通过。公网四份独立匿名 Chrome 资料以 667×375、375×350、375×667、1440×900 验证弹窗边界、滚动后按钮/提示命中、登录/注册切换、键盘焦点循环、Escape 后草稿及焦点保留；短屏滚动、正常屏无多余滚动，无脚本异常/横向溢出。账号资料变体仅用合成会话/策略响应补测布局，未执行导出/删除，不能算真实身份链路；OS 软键盘未验证。没有新账号或模型调用。首页/世界/会话 API 和原站 200，无密钥源站 403。余额、未到期的下一次自然备份及整体剩余门见[当前验收检查点](plans/2026-09-24-public-launch.plan.md#当前接续检查点2026-09-27-0109-北京时间)。
+
+## 历史前端发布锚点（2026-09-26 13:11，北京时间）
 
 前端/Worker 源码 `a950268e0559338b9bba384ebc617502f094f058` 已推送 GitHub，Cloudflare Worker `9f88bf7a-1c89-4c5d-bb75-a058c26bca86`、静态 JS `index-BEizA_4Q.js` / CSS `index-BUw-pkRK.css`。后端仍运行 `25c6581`，NextClaw SDK 固定快照未变；本次只更新 Cloudflare，不重启 Bibo、timer 或同机原站，原边缘 secret 保留。前一 Worker `85460cac-1093-4f28-9542-118f5386823d` 是本批回退锚点，回退会撤掉本次输入法修复。
 
-修复消息框将中文输入法确认 Enter 误当发送的问题，原判定排除 `isComposing` 与 IME `keyCode=229`，不改变普通 Enter 发送、Shift+Enter 换行及注册合同。47/47 测试、tsc、定向 lint/格式、构建、Wrangler dry-run 和差异检查通过。公网两个匿名 Chrome 资料在 1440/390px 重复组词及结束边缘事件，原草稿、DOM、caret 与焦点保留、不弹窗、不 preventDefault；Shift+Enter 换行，普通 Enter 只出现一份注册弹窗。无脚本错误和横向溢出，确认加载新 JS。该验证未操作 OS 输入法候选窗，不代表所有浏览器；没有新账号或模型调用。首页/世界/会话 API 和原站 200，无密钥源站 403；整体验收剩余门见[本轮检查点](plans/2026-09-24-public-launch.plan.md#当前接续检查点2026-09-26-1311-北京时间)。
+修复消息框将中文输入法确认 Enter 误当发送的问题，原判定排除 `isComposing` 与 IME `keyCode=229`，不改变普通 Enter 发送、Shift+Enter 换行及注册合同。47/47 测试、tsc、定向 lint/格式、构建、Wrangler dry-run 和差异检查通过。公网两个匿名 Chrome 资料在 1440/390px 重复组词及结束边缘事件，原草稿、DOM、caret 与焦点保留、不弹窗、不 preventDefault；Shift+Enter 换行，普通 Enter 只出现一份注册弹窗。无脚本错误和横向溢出，确认加载新 JS。该验证未操作 OS 输入法候选窗，不代表所有浏览器；没有新账号或模型调用。首页/世界/会话 API 和原站 200，无密钥源站 403；该批证据见[历史检查点](plans/2026-09-24-public-launch.plan.md#历史接续检查点2026-09-26-1311-北京时间)，整体当前状态以本文顶部链接为准。
 
 ## 最新自然定时备份（2026-09-26 04:15，北京时间）
 
