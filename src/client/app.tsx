@@ -49,6 +49,21 @@ class ApiError extends Error {
 
 type Account = { id: string; name: string; remainingToday: number };
 
+export function isMessageSubmitKey(
+  event: Pick<
+    globalThis.KeyboardEvent,
+    "key" | "shiftKey" | "isComposing" | "keyCode"
+  >,
+): boolean {
+  return (
+    event.key === "Enter" &&
+    !event.shiftKey &&
+    !event.isComposing &&
+    // IME keydown can arrive just outside compositionstart/compositionend.
+    event.keyCode !== 229
+  );
+}
+
 const sharedMemoryNotice =
   "你发送的内容可能进入共同上下文或 AI 的共享文件，其他用户可能间接获知。请勿输入隐私或秘密。";
 
@@ -797,7 +812,7 @@ export function App() {
                   !selected || busy || selected.energy < MIN_WAKE_ENERGY
                 }
                 onKeyDown={(event) => {
-                  if (event.key === "Enter" && !event.shiftKey) {
+                  if (isMessageSubmitKey(event.nativeEvent)) {
                     event.preventDefault();
                     event.currentTarget.form?.requestSubmit();
                   }

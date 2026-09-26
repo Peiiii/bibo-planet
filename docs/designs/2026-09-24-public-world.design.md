@@ -1,5 +1,13 @@
 # 公开星球：使用、身份与部署设计
 
+## 中文输入法确认与发送分离（2026-09-26）
+
+本项对应黄金链路 1/4 与 AC-02/08 的自然输入体验，不改变共享 AI 的产品范围。公网 390px 匿名访客在消息框输入中文草稿，浏览器发送 `isComposing=true` 的 Enter 键盘事件时，现有处理器仍调用表单提交并打开注册框；问题由 `App` 的消息框 `onKeyDown` 无条件把 Enter 当发送造成，而非模型或后端异常。
+
+用户用中文输入法确认候选文字时，只完成输入，不发送、不弹注册框、不阻止输入法默认行为，草稿、焦点和选区保持；候选确认结束后的普通 Enter 才沿现有提交链路发送（匿名先注册），Shift+Enter 仍换行，发送按钮语义不变。保留 native `isComposing` 与 IME `keyCode=229` 两个排除条件，后者覆盖 composition 起止与 keydown 顺序的边缘；依据见 [MDN 的 IME 键盘事件说明](https://developer.mozilla.org/en-US/docs/Web/API/Element/keydown_event#keydown_events_with_ime)。只取消所有 Enter 会破坏现有便捷发送；新增独立 composition 状态和延迟计时会重复浏览器事实并扩大生命周期，当前没有必要。判定由消息框的一份纯按键函数拥有，不改会话、请求编号、账号或 API。
+
+验收：定向测试覆盖普通 Enter、Shift+Enter、组词中 Enter、`isComposing=false/keyCode=229` 的结束边缘和非 Enter；真实浏览器在消息框按 compositionstart→input→keydown→compositionend 顺序确认文字，断言原 DOM 身份、草稿、caret、焦点仍在且注册框不出现；再确认普通 Enter 只触发一次注册入口、Shift+Enter 保留换行。使用匿名公网桌面和 390px 手机重复同一失败入口，无须新建账号或消耗模型。此项是可在单批完成的 bugfix，不另建执行 plan，也不宣称已验证操作系统候选窗或所有浏览器 IME。
+
 ## 首屏世界列表的悬挂请求恢复（2026-09-25）
 
 当前匿名入口先请求 `/api/world` 才显示三位 AI。`App` 的首次请求没有终止条件：如果浏览器与边缘/源站之间的连接一直悬挂，`refreshing` 保持 true，30 秒定时刷新也不能重试，列表持续显示「正在加载 AI…」；原错误文字又只在下方聊天区，手机首屏看不见。公网 8 次匿名 API 抽样均为 200、约 0.9–1.8 秒，不能据此声称服务通常悬挂；这次修的是明确可见的失败恢复缺口，不用慢请求推断服务器故障。

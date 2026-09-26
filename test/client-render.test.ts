@@ -6,9 +6,24 @@ import {
   App,
   activityLabel,
   appendCompletedTurn,
+  isMessageSubmitKey,
   mergeConversationHistory,
   renderSpiritText,
 } from "../src/client/app.tsx";
+
+test("message Enter submits only outside IME composition and without Shift", () => {
+  const enter = {
+    key: "Enter",
+    shiftKey: false,
+    isComposing: false,
+    keyCode: 13,
+  };
+  assert.equal(isMessageSubmitKey(enter), true);
+  assert.equal(isMessageSubmitKey({ ...enter, shiftKey: true }), false);
+  assert.equal(isMessageSubmitKey({ ...enter, isComposing: true }), false);
+  assert.equal(isMessageSubmitKey({ ...enter, keyCode: 229 }), false);
+  assert.equal(isMessageSubmitKey({ ...enter, key: "a", keyCode: 65 }), false);
+});
 
 test("conversation identifies shared AI and discloses cross-user context", () => {
   const html = renderToStaticMarkup(createElement(App));
