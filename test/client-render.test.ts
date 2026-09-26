@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -10,6 +11,18 @@ import {
   mergeConversationHistory,
   renderSpiritText,
 } from "../src/client/app.tsx";
+
+test("all account modals inherit one bounded, scrollable dialog surface", () => {
+  const css = readFileSync(
+    new URL("../src/client/style.css", import.meta.url),
+    "utf8",
+  );
+  const base = css.match(/\.auth-dialog\s*\{([^}]*)\}/)?.[1] ?? "";
+  const account = css.match(/\.account-dialog\s*\{([^}]*)\}/)?.[1] ?? "";
+  assert.match(base, /max-height:\s*calc\(100dvh - 36px\)/);
+  assert.match(base, /overflow-y:\s*auto/);
+  assert.doesNotMatch(account, /max-height|overflow-y/);
+});
 
 test("message Enter submits only outside IME composition and without Shift", () => {
   const enter = {

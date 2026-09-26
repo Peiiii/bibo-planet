@@ -616,6 +616,8 @@ a {
 }
 .auth-dialog {
   width: min(100%, 420px);
+  max-height: calc(100dvh - 36px);
+  overflow-y: auto;
   position: relative;
   padding: 38px;
   border-radius: 22px;
@@ -705,8 +707,6 @@ a {
 }
 .account-dialog {
   width: min(100%, 540px);
-  max-height: calc(100dvh - 36px);
-  overflow-y: auto;
 }
 .account-dialog .auth-intro {
   margin-bottom: 18px;
