@@ -1,6 +1,16 @@
 # Bibo Planet 线上运行手册
 
-状态：记录至 2026-09-25 的实际部署；变更后须同步复核。上线地址为 <https://planet.bibo.bot>，源码为 <https://github.com/Peiiii/bibo-planet>。本手册只存放路径、流程和检查项，不存放任何密钥值或私人对话内容。
+状态：记录至 2026-09-26 的实际部署；变更后须同步复核。上线地址为 <https://planet.bibo.bot>，源码为 <https://github.com/Peiiii/bibo-planet>。本手册只存放路径、流程和检查项，不存放任何密钥值或私人对话内容。
+
+## 当前前端发布锚点（2026-09-26 13:11，北京时间）
+
+前端/Worker 源码 `a950268e0559338b9bba384ebc617502f094f058` 已推送 GitHub，Cloudflare Worker `9f88bf7a-1c89-4c5d-bb75-a058c26bca86`、静态 JS `index-BEizA_4Q.js` / CSS `index-BUw-pkRK.css`。后端仍运行 `25c6581`，NextClaw SDK 固定快照未变；本次只更新 Cloudflare，不重启 Bibo、timer 或同机原站，原边缘 secret 保留。前一 Worker `85460cac-1093-4f28-9542-118f5386823d` 是本批回退锚点，回退会撤掉本次输入法修复。
+
+修复消息框将中文输入法确认 Enter 误当发送的问题，原判定排除 `isComposing` 与 IME `keyCode=229`，不改变普通 Enter 发送、Shift+Enter 换行及注册合同。47/47 测试、tsc、定向 lint/格式、构建、Wrangler dry-run 和差异检查通过。公网两个匿名 Chrome 资料在 1440/390px 重复组词及结束边缘事件，原草稿、DOM、caret 与焦点保留、不弹窗、不 preventDefault；Shift+Enter 换行，普通 Enter 只出现一份注册弹窗。无脚本错误和横向溢出，确认加载新 JS。该验证未操作 OS 输入法候选窗，不代表所有浏览器；没有新账号或模型调用。首页/世界/会话 API 和原站 200，无密钥源站 403；整体验收剩余门见[本轮检查点](plans/2026-09-24-public-launch.plan.md#当前接续检查点2026-09-26-1311-北京时间)。
+
+## 最新自然定时备份（2026-09-26 04:15，北京时间）
+
+systemd `LastTriggerUSec=2026-09-26 04:15:46 CST`，service success/exit 0，timer active、下一次预计 2026-09-27 04:16:05 CST。服务器 journal 记录精确对象 `daily/daily-2026-09-26-041546.UfQxmquw.tar.gz.gpg`，密文 SHA-256 `ac7c9d2ab50be5b25cbb5c931674ba51196b4a5b76f6b14acecc6ba604b3d05a`；独立 OSS `stat` 证实 35,717 字节、修改时间 04:15:46 CST、AES256。**本次没有下载、独立核对密文哈希或解密这个新对象**；离机取回与可读证据沿用下方首次自然备份，不把元数据检查冒充恢复验证。13:01 检查 Bibo active、`NRestarts=0`、内存约 277 MiB、后端 SHA `25c6581` 且代码区干净；共享供应商钱包仍可用、处于已知 1–10 元区间，没有新的告警升级或充值。
 
 ## 首次自然定时备份（2026-09-25 04:17，北京时间）
 
@@ -8,7 +18,7 @@
 
 ## 当前文件能力上线锚点（2026-09-25 01:26，北京时间）
 
-GitHub `master`、ECS Bibo 后端同为 `25c6581319b53fd22be313d1ca239c74fffb1abd`，Cloudflare Worker 版本 `85460cac-1093-4f28-9542-118f5386823d`、静态 JS `index-BdR_WfRE.js`。只更新 Bibo 自身服务与 Worker，NextClaw SDK 的 19 包固定快照未变，同机旧站未重启。前端明确说明 AI 有自己的共享文本文件，并提示内容可能被其他用户间接获知。真实 NextClaw Agent 的工具闭集从两项笔记工具扩展为 `bibo_file_list`、`bibo_file_read`、`bibo_file_write` 共五项；只能列/读自己的工作区，写入自己的 `files/`，不可运行代码、访问网络、宿主文件或其他 AI 目录。`AGENTS.md`/`IDENTITY.md` 只读，`MEMORY.md` 仍用原笔记工具。`restrictToWorkspace` 仍不被视为 OS 沙箱。
+该批发布时 GitHub `master`、ECS Bibo 后端同为 `25c6581319b53fd22be313d1ca239c74fffb1abd`，Cloudflare Worker 版本 `85460cac-1093-4f28-9542-118f5386823d`、静态 JS `index-BdR_WfRE.js`；最新前端锚点见本文顶部。只更新 Bibo 自身服务与 Worker，NextClaw SDK 的 19 包固定快照未变，同机旧站未重启。前端明确说明 AI 有自己的共享文本文件，并提示内容可能被其他用户间接获知。真实 NextClaw Agent 的工具闭集从两项笔记工具扩展为 `bibo_file_list`、`bibo_file_read`、`bibo_file_write` 共五项；只能列/读自己的工作区，写入自己的 `files/`，不可运行代码、访问网络、宿主文件或其他 AI 目录。`AGENTS.md`/`IDENTITY.md` 只读，`MEMORY.md` 仍用原笔记工具。`restrictToWorkspace` 仍不被视为 OS 沙箱。
 
 发布前 46/46 测试、TypeScript、ESLint、Prettier、Vite 构建、Wrangler dry-run 与差异检查通过；隔离真实 Agent 写入→读回→下一轮列目录成功。ECS 原代码区干净、四份状态文件存在，先运行 Bibo 专用加密备份；更新后按原锁文件离线安装、远端 TypeScript 通过，只重启 Bibo。公网两个隔离 Chrome 账号从注册/登录页面访问同一墨里：甲实际列目录并写/读文件，刷新后历史保留；乙读到同一内容；乙切换皮可读不到该文件，390px 手机无横向溢出。第一次浏览器脚本在切换 AI 后误沿用上一会话消息计数而超时，服务器四轮模型调用及目标文件已完成；复用同一测试账号只读重检四段页面回复后，黄金文件链路通过，没有为纠正脚本另建账号或重复模型调用。
 
